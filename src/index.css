@@ -1,0 +1,135 @@
+/* src/index.css */
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-family: 'Montserrat', sans-serif;
+  background-color: #0000;
+}
+
+code {
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* .starfield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000000;
+  overflow: hidden;
+} */
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.star.small {
+  width: 1px;
+  height: 1px;
+  animation: twinkle 3s infinite ease-in-out;
+}
+
+.star.medium {
+  width: 2px;
+  height: 2px;
+  animation: twinkle 4s infinite ease-in-out;
+}
+
+.star.large {
+  width: 3px;
+  height: 3px;
+  animation: twinkle 5s infinite ease-in-out;
+}
+
+.star.moving {
+  animation: moveAndTwinkle 8s infinite linear;
+}
+
+.cursor-effect {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: cursorTrail 1.5s ease-out forwards;
+}
+
+@keyframes twinkle {
+  0%, 100% { 
+      opacity: 0.2;
+      transform: scale(1);
+  }
+  50% { 
+      opacity: 1;
+      transform: scale(1.5);
+  }
+}
+
+@keyframes moveAndTwinkle {
+  0% {
+      opacity: 0;
+      transform: translateY(100vh) translateX(0px) scale(1);
+  }
+  10% {
+      opacity: 1;
+  }
+  90% {
+      opacity: 1;
+  }
+  100% {
+      opacity: 0;
+      transform: translateY(-10vh) translateX(var(--drift)) scale(0.5);
+  }
+}
+
+@keyframes cursorTrail {
+  0% {
+      opacity: 1;
+      transform: scale(1);
+  }
+  100% {
+      opacity: 0;
+      transform: scale(0);
+  }
+}
+
+.star.floating {
+  animation: float 6s infinite ease-in-out;
+}
+
+@keyframes float {
+  0%, 100% {
+      transform: translateY(0px) translateX(0px);
+  }
+  25% {
+      transform: translateY(-20px) translateX(10px);
+  }
+  50% {
+      transform: translateY(0px) translateX(20px);
+  }
+  75% {
+      transform: translateY(20px) translateX(10px);
+  }
+}
+
+.starfield {
+  position: fixed;
+  z-index: -1; 
+}
+
+.pages-container {
+  position: relative; /* Creates stacking context */
+  z-index: 1;        /* Above starfield */
+  overflow-y: auto;  /* Allows scrolling */
+}
