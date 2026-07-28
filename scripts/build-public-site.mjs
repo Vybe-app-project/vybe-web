@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 const sourceFiles = [
@@ -12,6 +12,10 @@ const sourceFiles = [
   'support-bootstrap.js',
 ];
 const outputNames = new Map([['public-site-index.html', 'index.html']]);
+const sharedAssets = [
+  ['public/favicon.svg', 'favicon.svg'],
+  ['public/robots.txt', 'robots.txt'],
+];
 const outputRoot = resolve('public-build');
 
 const configuredApiUrl = process.env.VITE_API_URL?.trim();
@@ -55,15 +59,20 @@ for (const source of sourceFiles) {
   }
   await writeFile(resolve(outputRoot, outputNames.get(source) || source), contents);
 }
+for (const [source, output] of sharedAssets) {
+  await copyFile(resolve(source), resolve(outputRoot, output));
+}
 
 const supportRouteRoot = resolve(outputRoot, 'support');
 await mkdir(supportRouteRoot, { recursive: true });
 await writeFile(
   resolve(supportRouteRoot, 'index.html'),
   builtSupportHtml.replace(
-    '    <title>Contact Vybe Support</title>',
-    '    <base href="../" />\n    <title>Contact Vybe Support</title>',
+    '  <head>',
+    '  <head>\n    <base href="../" />',
   ),
 );
 
-console.log(`Public site build passed (${sourceFiles.length + 1} files generated).`);
+console.log(
+  `Public site build passed (${sourceFiles.length + sharedAssets.length + 1} files generated).`,
+);

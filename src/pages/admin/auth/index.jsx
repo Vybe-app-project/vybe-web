@@ -1,15 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, Eye, EyeOff, LoaderCircle, ShieldCheck } from "lucide-react";
 import axiosInstance from "../../../config/axios";
-import { Toaster, toaster } from "../../../components/ui/toaster"
-import { ClipLoader } from "react-spinners";
 import { useAdminRouter } from "../../../routing";
-
-const override = {
-  display: "block",
-  margin: "0 auto",
-  borderColor: "white",
-};
+import { getAdminToken, setAdminToken } from "../../../utils/adminAuthStorage";
 
 export default function LoginAdmin() {
   const [email, setEmail] = useState("");
@@ -17,6 +10,7 @@ export default function LoginAdmin() {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [feedback, setFeedback] = useState("");
   const { navigate } = useAdminRouter();
 
   const validateForm = () => {
@@ -38,41 +32,38 @@ export default function LoginAdmin() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async(e) => {
-    e.preventDefault();
-    
-    try{
-        if (validateForm()) {
-      if(email && password){
-        setLoading(true)
-        const res = await axiosInstance.post("/admins/login", {
-            email, password
-        })
-        setLoading(false)
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!validateForm()) return;
 
-        if(res?.data?.data?.token){
-            window.localStorage.setItem("access_token",res?.data?.data?.token)
-            window.localStorage.setItem("admin_profile", JSON.stringify(res?.data?.data?.admin || {}))
-        }
-
-                toaster.create({
-  title: "Logged in successfully!",  
-    type: 'success',
-   closable: true,
-       placement: "top-end",
-})
-      setTimeout(() => navigate("/home", { replace: true }), 500);
+    setLoading(true);
+    setFeedback("");
+    try {
+      const response = await axiosInstance.post('/admins/login', {
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      const token = response?.data?.data?.token;
+      const admin = response?.data?.data?.admin;
+      if (
+        typeof token !== 'string'
+        || !token.trim()
+        || !admin?._id
+        || !['ADMIN', 'SUPER_ADMIN'].includes(admin.role)
+      ) {
+        throw new Error('Vybe returned an invalid administrator session.');
       }
-    }
-    }
-    catch(error){
-        setLoading(false)
-        toaster.create({
-  title: error?.response?.data?.message || error?.message,  
-    type: 'error',
-   closable: true,
-       placement: "top-end",
-})
+
+      setAdminToken(token);
+      navigate('/home', { replace: true });
+    } catch (error) {
+      setFeedback(
+        error?.response?.data?.message
+        || error?.message
+        || 'Could not sign in.',
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -81,131 +72,173 @@ export default function LoginAdmin() {
   };
 
     useEffect(() => {
-    const token = window.localStorage.getItem("access_token");
+    const token = getAdminToken();
     if (token) {
       navigate("/home", { replace: true });
     }
   }, [navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-       <Toaster />
+    <main className="relative min-h-screen overflow-hidden bg-slate-950 px-4 py-10 sm:px-6">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(0,212,170,0.18),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(45,212,191,0.12),transparent_34%)]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-[0.035] [background-image:linear-gradient(rgba(255,255,255,.8)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.8)_1px,transparent_1px)] [background-size:48px_48px]"
+      />
 
-      {/* Custom Toast */}
-        <div className="fixed top-4 right-4 z-50">
-        </div>
-
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Admin Login
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            Sign in to your admin account
-          </p>
-        </div>
-        
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                autoComplete="email"
-                className={`appearance-none relative block w-full px-3 py-2 border ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm`}
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) {
-                    setErrors(prev => ({ ...prev, email: '' }));
-                  }
-                }}
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
+      <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-md items-center">
+        <section className="w-full">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#00D4AA] text-slate-950 shadow-[0_18px_50px_rgba(0,212,170,0.28)]">
+              <ShieldCheck aria-hidden="true" className="h-7 w-7" strokeWidth={2.3} />
             </div>
-            
-            <div>
-              <label htmlFor="pass" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-[#65e4ca]">
+              Vybe operations
+            </p>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+              Admin Login
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-slate-400">
+              Sign in to manage the Vybe community securely.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6 rounded-3xl border border-white/10 bg-white p-6 shadow-2xl shadow-black/25 sm:p-8"
+          >
+            {feedback && (
+              <div
+                role="alert"
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800"
+              >
+                {feedback}
+              </div>
+            )}
+
+            <div className="space-y-5">
+              <div>
+                <label htmlFor="email" className="mb-2 block text-sm font-semibold text-slate-800">
+                  Email address
+                </label>
                 <input
-                  type={showPassword ? "text" : "password"}
-                  id="pass"
+                  id="email"
+                  type="email"
                   required
-                  autoComplete="current-password"
-                  className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm`}
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) {
-                      setErrors(prev => ({ ...prev, password: '' }));
+                  autoComplete="email"
+                  className={`block min-h-12 w-full rounded-xl border bg-white px-4 py-3 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
+                    errors.email
+                      ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                      : 'border-slate-300 focus:border-[#00a888] focus:ring-[#00D4AA]/20'
+                  }`}
+                  placeholder="Enter your email"
+                  value={email}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? 'admin-email-error' : undefined}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setFeedback("");
+                    if (errors.email) {
+                      setErrors((previous) => ({ ...previous, email: '' }));
                     }
                   }}
                 />
-                <button
-                  type="button"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
-                  onClick={togglePasswordVisibility}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                  )}
-                </button>
+                {errors.email && (
+                  <p id="admin-email-error" role="alert" className="mt-2 text-sm font-medium text-red-700">
+                    {errors.email}
+                  </p>
+                )}
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-              )}
-            </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
+              <div>
+                <label htmlFor="pass" className="mb-2 block text-sm font-semibold text-slate-800">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="pass"
+                    required
+                    autoComplete="current-password"
+                    className={`block min-h-12 w-full rounded-xl border bg-white py-3 pl-4 pr-12 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:ring-4 ${
+                      errors.password
+                        ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
+                        : 'border-slate-300 focus:border-[#00a888] focus:ring-[#00D4AA]/20'
+                    }`}
+                    placeholder="Enter your password"
+                    value={password}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? 'admin-password-error' : undefined}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      setFeedback("");
+                      if (errors.password) {
+                        setErrors((previous) => ({ ...previous, password: '' }));
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute inset-y-0 right-0 flex w-12 cursor-pointer items-center justify-center rounded-r-xl text-slate-500 transition hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#00a888]"
+                    onClick={togglePasswordVisibility}
+                  >
+                    {showPassword ? (
+                      <EyeOff aria-hidden="true" className="h-5 w-5" />
+                    ) : (
+                      <Eye aria-hidden="true" className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p id="admin-password-error" role="alert" className="mt-2 text-sm font-medium text-red-700">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end">
               <button
                 type="button"
-                className="font-medium text-[#00D4AA] hover:text-teal-800 underline transition-colors duration-200 cursor-pointer"
+                className="cursor-pointer text-sm font-semibold text-[#007d68] underline decoration-transparent underline-offset-4 transition hover:decoration-current focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00a888] focus-visible:ring-offset-2"
                 onClick={() => navigate("/reset-password")}
               >
-                Reset Password
+                Reset password
               </button>
             </div>
-          </div>
 
-          <div>
             <button
               disabled={loading}
+              aria-busy={loading}
               type="submit"
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#00D4AA] hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00D4AA] transition-colors duration-200 ${loading && 'opacity-[0.3]'}`}
+              className="group flex min-h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#00b894] px-4 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-teal-600/20 transition hover:-translate-y-0.5 hover:bg-[#00d4aa] hover:shadow-xl focus:outline-none focus-visible:ring-4 focus-visible:ring-[#00D4AA]/35 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {
-                !loading?
-              "Sign In"
-                :
-               <ClipLoader
-        color={'white'}
-        loading={true}
-        size={25}
-      />
-              }
+              {loading ? (
+                <>
+                  <LoaderCircle aria-hidden="true" className="h-5 w-5 animate-spin" />
+                  Signing in
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight
+                    aria-hidden="true"
+                    className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  />
+                </>
+              )}
             </button>
-          </div>
-        </form>
+
+            <p className="text-center text-xs leading-5 text-slate-500">
+              Authorized administrators only. Sessions end when this browser tab closes.
+            </p>
+          </form>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

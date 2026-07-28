@@ -10,6 +10,7 @@ const forbidden = [
   ['private key material', /BEGIN (?:RSA |EC )?PRIVATE KEY/],
   ['browser-side AWS credential config', /S3_(?:ACCESS|SECRET)_KEY/],
   ['legacy Create React App config', /REACT_APP_[A-Z0-9_]+/],
+  ['legacy Create React App branding', /Create React App|React App Sample/],
   ['development loopback API URL', /(?:localhost|127\.0\.0\.1)(?::\d+|\/api)/],
   ['legacy five-minute timeout', /\b300000\b/],
   ['direct provider endpoint', /(?:maps\.googleapis\.com|api\.tenor\.com|api\.nal\.usda\.gov)/],
@@ -50,6 +51,14 @@ if (expectedBasePath) {
 }
 
 const expectedApiUrl = process.env.VITE_API_URL?.trim().replace(/\/+$/, '');
+const adminIndexHtml = await readFile(join(adminBuildRoot, 'index.html'), 'utf8');
+if (
+  !adminIndexHtml.includes('http-equiv="Content-Security-Policy"')
+  || !adminIndexHtml.includes("script-src 'self'")
+  || !adminIndexHtml.includes('name="referrer" content="no-referrer"')
+) {
+  findings.push('compiled admin index is missing the release security policy');
+}
 if (expectedApiUrl && !adminSearchableContents.some((contents) => contents.includes(expectedApiUrl))) {
   findings.push('compiled admin API URL does not match configured VITE_API_URL');
 }
