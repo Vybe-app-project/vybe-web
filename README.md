@@ -36,3 +36,7 @@ deployment. The Pages deployment combines the generated admin console with the
 version-controlled privacy, terms, account-deletion, shared-content, and private
 support pages. It publishes support at both `support.html` and the extensionless
 `support` route used by the mobile app.
+
+The current GitHub Pages project site is served beneath `/vybe-web`, so its
+repository variable must remain `VITE_BASE_PATH=/vybe-web/admin/`. Use
+`/admin/` only after a root custom domain and its Pages `CNAME` are configured.

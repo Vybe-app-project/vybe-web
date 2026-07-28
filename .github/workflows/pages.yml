@@ -30,7 +30,7 @@ jobs:
           cache: npm
       - name: Require deployment configuration
         run: |
-          test "$VITE_BASE_PATH" = "/admin/"
+          test "$VITE_BASE_PATH" = "/vybe-web/admin/"
           case "$VITE_API_URL" in
             https://*.invalid/*|https://*.test/*|https://localhost*|https://127.*|http://*|"")
               echo "VITE_API_URL must be the real HTTPS release API ending in /api" >&2
