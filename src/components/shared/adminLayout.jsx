@@ -5,6 +5,7 @@ import {
   MdPeople, 
   MdFitnessCenter, 
   MdReport,
+  MdSupportAgent,
   MdSettings, 
   MdLogout,
   MdMenu,
@@ -34,6 +35,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Users', icon: MdPeople, path: '/users' },
     { name: 'Workouts', icon: MdFitnessCenter, path: '/workouts' },
     { name: 'Moderation', icon: MdReport, path: '/reports' },
+    { name: 'Support', icon: MdSupportAgent, path: '/support' },
   ];
 
   const bottomMenuItems = [

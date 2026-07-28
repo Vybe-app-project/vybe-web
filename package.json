@@ -18,6 +18,7 @@
   "scripts": {
     "start": "vite --host 127.0.0.1",
     "build": "vite build",
+    "build:public": "node scripts/build-public-site.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "verify:build": "node scripts/verify-build.mjs",

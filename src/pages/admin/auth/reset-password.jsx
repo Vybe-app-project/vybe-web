@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import axiosInstance from '../../../config/axios';
-import { useAdminRouter } from '../../../routing';
+import { PUBLIC_BASE_PATH, useAdminRouter } from '../../../routing';
 
 const strongEnough = (value) => (
   value.length >= 12
@@ -23,28 +23,39 @@ export default function ResetAdminPassword() {
   const { token, audience } = resetContext;
   const isUserReset = audience === 'user';
   const endpointPrefix = isUserReset ? '/auth' : '/admins';
+  const supportPath = `${PUBLIC_BASE_PATH === '/' ? '' : PUBLIC_BASE_PATH}/support`;
+  const publicHomePath = PUBLIC_BASE_PATH === '/' ? '/' : `${PUBLIC_BASE_PATH}/`;
   const { navigate } = useAdminRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [status, setStatus] = useState({ loading: false, error: '', success: '' });
+  const [status, setStatus] = useState({
+    loading: false,
+    error: '',
+    success: '',
+    deliveryNotice: false,
+  });
 
   const requestReset = async (event) => {
     event.preventDefault();
-    setStatus({ loading: true, error: '', success: '' });
+    setStatus({ loading: true, error: '', success: '', deliveryNotice: false });
     try {
-      const { data } = await axiosInstance.post(`${endpointPrefix}/request-reset`, { email });
+      await axiosInstance.post(`${endpointPrefix}/request-reset`, { email });
       setStatus({
         loading: false,
         error: '',
-        success: data?.message || 'If that account exists, reset instructions have been sent.',
+        success: 'If that account exists, reset instructions have been sent.',
+        deliveryNotice: true,
       });
     } catch (error) {
       setStatus({
         loading: false,
-        error: error?.response?.data?.message || error?.message || 'Could not request a reset.',
+        error: error?.response?.status === 429
+          ? 'Too many reset requests. Wait a few minutes and try again.'
+          : 'Could not request a reset. Try again or use private Support.',
         success: '',
+        deliveryNotice: false,
       });
     }
   };
@@ -56,23 +67,35 @@ export default function ResetAdminPassword() {
         loading: false,
         error: 'Use at least 12 characters with uppercase, lowercase, number, and symbol.',
         success: '',
+        deliveryNotice: false,
       });
       return;
     }
     if (password !== confirmation) {
-      setStatus({ loading: false, error: 'Passwords do not match.', success: '' });
+      setStatus({
+        loading: false,
+        error: 'Passwords do not match.',
+        success: '',
+        deliveryNotice: false,
+      });
       return;
     }
 
-    setStatus({ loading: true, error: '', success: '' });
+    setStatus({ loading: true, error: '', success: '', deliveryNotice: false });
     try {
       await axiosInstance.post(`${endpointPrefix}/reset-password`, { token, password });
-      setStatus({ loading: false, error: '', success: 'Password updated. You can now sign in.' });
+      setStatus({
+        loading: false,
+        error: '',
+        success: 'Password updated. You can now sign in.',
+        deliveryNotice: false,
+      });
     } catch (error) {
       setStatus({
         loading: false,
         error: error?.response?.data?.message || error?.message || 'Could not reset the password.',
         success: '',
+        deliveryNotice: false,
       });
     }
   };
@@ -145,6 +168,13 @@ export default function ResetAdminPassword() {
 
           {status.error && <p role="alert" className="text-sm text-red-700">{status.error}</p>}
           {status.success && <p role="status" className="text-sm text-emerald-700">{status.success}</p>}
+          {status.deliveryNotice && (
+            <p className="rounded-lg bg-amber-50 p-3 text-sm leading-5 text-amber-900">
+              Delivery requires Vybe&apos;s email channel to be configured. If no
+              message arrives, use the{' '}
+              <a className="font-semibold underline" href={supportPath}>private Support page</a>.
+            </p>
+          )}
 
           <button
             type="submit"
@@ -155,7 +185,7 @@ export default function ResetAdminPassword() {
           </button>
           {isUserReset ? (
             <a
-              href={new URL('../../', window.location.href).toString()}
+              href={publicHomePath}
               className="block w-full px-4 py-2 text-center text-sm font-medium text-slate-600"
             >
               Back to Vybe

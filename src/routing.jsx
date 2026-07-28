@@ -5,6 +5,9 @@ export const ADMIN_BASE_PATH = (
   || import.meta.env.BASE_URL
   || '/admin/'
 ).replace(/\/+$/, '') || '/';
+export const PUBLIC_BASE_PATH = ADMIN_BASE_PATH.endsWith('/admin')
+  ? ADMIN_BASE_PATH.slice(0, -'/admin'.length) || '/'
+  : '/';
 const RoutingContext = createContext(null);
 
 const currentRoute = () => {

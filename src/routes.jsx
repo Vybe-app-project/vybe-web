@@ -9,6 +9,7 @@ const Admins = lazy(() => import("./pages/admin/portal/admins"));
 const Users = lazy(() => import("./pages/admin/portal/users"));
 const Workouts = lazy(() => import("./pages/admin/portal/workouts"));
 const Reports = lazy(() => import("./pages/admin/portal/reports"));
+const SupportInbox = lazy(() => import("./pages/admin/portal/support"));
 const Settings = lazy(() => import("./pages/admin/portal/settings"));
 
 const RouteLoading = () => (
@@ -28,6 +29,7 @@ function RouteContent() {
     '/users',
     '/workouts',
     '/reports',
+    '/support',
     '/settings',
   ].includes(route);
 
@@ -42,6 +44,7 @@ function RouteContent() {
   if (route === '/users') return <AppLayout><Users /></AppLayout>;
   if (route === '/workouts') return <AppLayout><Workouts /></AppLayout>;
   if (route === '/reports') return <AppLayout><Reports /></AppLayout>;
+  if (route === '/support') return <AppLayout><SupportInbox /></AppLayout>;
   if (route === '/settings') return <AppLayout><Settings /></AppLayout>;
 
   return null;

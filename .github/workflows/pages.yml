@@ -33,17 +33,17 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - run: npm run build:public
       - run: npm run verify:build
       - name: Assemble site
         run: |
           mkdir -p site/admin
           cp -R build/. site/admin/
-          for route in home admins users workouts reports settings reset-password; do
+          for route in home admins users workouts reports support settings reset-password; do
             mkdir -p "site/admin/$route"
             cp build/index.html "site/admin/$route/index.html"
           done
-          cp public-site-index.html site/index.html
-          cp privacy-policy.html terms-and-conditions.html account-deletion.html open.html site/
+          cp -R public-build/. site/
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site
