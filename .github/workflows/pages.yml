@@ -43,7 +43,7 @@ jobs:
           done
           cp public-site-index.html site/index.html
           cp privacy-policy.html terms-and-conditions.html account-deletion.html open.html site/
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: site
 
