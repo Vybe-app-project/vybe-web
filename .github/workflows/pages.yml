@@ -23,8 +23,8 @@ jobs:
       VITE_API_URL: ${{ vars.VITE_API_URL }}
       VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 20.20.2
           cache: npm
@@ -44,7 +44,7 @@ jobs:
           done
           cp public-site-index.html site/index.html
           cp privacy-policy.html terms-and-conditions.html account-deletion.html open.html site/
-      - uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
@@ -57,4 +57,4 @@ jobs:
     steps:
       - name: Deploy
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
