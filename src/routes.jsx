@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import AppLayout from "./components/shared/layouts";
 import { AdminRouter, useAdminRouter } from "./routing";
 
@@ -11,6 +11,7 @@ const Workouts = lazy(() => import("./pages/admin/portal/workouts"));
 const Reports = lazy(() => import("./pages/admin/portal/reports"));
 const SupportInbox = lazy(() => import("./pages/admin/portal/support"));
 const Settings = lazy(() => import("./pages/admin/portal/settings"));
+const AuditLog = lazy(() => import("./pages/admin/portal/audit-log"));
 
 const RouteLoading = () => (
   <div role="status" className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
@@ -31,6 +32,7 @@ function RouteContent() {
     '/reports',
     '/support',
     '/settings',
+    '/audit-log',
   ].includes(route);
 
   useEffect(() => {
@@ -46,6 +48,7 @@ function RouteContent() {
   if (route === '/reports') return <AppLayout><Reports /></AppLayout>;
   if (route === '/support') return <AppLayout><SupportInbox /></AppLayout>;
   if (route === '/settings') return <AppLayout><Settings /></AppLayout>;
+  if (route === '/audit-log') return <AppLayout><AuditLog /></AppLayout>;
 
   return null;
 }

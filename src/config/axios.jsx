@@ -1,5 +1,6 @@
 import Axios from 'axios';
 import { API_BASE_URL, API_CONFIGURATION_ERROR } from './env';
+import { clearAdminSession, getAdminToken } from '../utils/adminAuthStorage';
 
 const axiosInstance = Axios.create({
   baseURL: API_BASE_URL || undefined,
@@ -12,7 +13,7 @@ axiosInstance.interceptors.request.use(
       return Promise.reject(new Error(API_CONFIGURATION_ERROR));
     }
     if (typeof window !== 'undefined') {
-      const token = window.localStorage.getItem('access_token');
+      const token = getAdminToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -28,7 +29,7 @@ axiosInstance.interceptors.response.use(
   response => response,
   error => {
     if (error?.response?.status === 401 && typeof window !== 'undefined') {
-      window.localStorage.removeItem('access_token');
+      clearAdminSession();
     }
     return Promise.reject(error);
   },
