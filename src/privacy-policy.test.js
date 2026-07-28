@@ -14,4 +14,16 @@ describe('published privacy policy matches the shipped authentication surface', 
     expect(policy).toContain('Firebase Cloud Messaging');
     expect(policy).toContain('Apple Push Notification Service');
   });
+
+  it('describes livestream relay processing and opt-in community meals', () => {
+    expect(policy).toMatch(/livestream peer connections use a Vybe-operated relay/i);
+    expect(policy).toMatch(/does not record or persist the livestream audio or video/i);
+    expect(policy).toMatch(/logged meals are private by default/i);
+    expect(policy).toMatch(/health notes, meal-scan diagnostics, and confidence metadata are not included/i);
+  });
+
+  it('accurately separates authored chat deletion from other participants content', () => {
+    expect(policy).toMatch(/messages and managed media that you authored are removed/i);
+    expect(policy).toMatch(/messages authored by other participants remain available/i);
+  });
 });
