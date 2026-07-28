@@ -9,6 +9,24 @@ export default function Settings() {
   const [admin, setAdmin] = useState(null);
   const [form, setForm] = useState({ fullName: '', email: '' });
   const [state, setState] = useState({ loading: true, saving: false, error: '', success: '' });
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmation: '',
+  });
+  const [passwordState, setPasswordState] = useState({
+    saving: false,
+    error: '',
+  });
+
+  const passwordIsStrong = value => (
+    value.length >= 12
+    && value.length <= 128
+    && /[a-z]/.test(value)
+    && /[A-Z]/.test(value)
+    && /\d/.test(value)
+    && /[^A-Za-z0-9]/.test(value)
+  );
 
   const loadAdmin = useCallback(async () => {
     setState(current => ({ ...current, loading: true, error: '' }));
@@ -48,6 +66,41 @@ export default function Settings() {
         saving: false,
         error: error?.response?.data?.message || error?.message || 'Could not save your profile.',
       }));
+    }
+  };
+
+  const changePassword = async event => {
+    event.preventDefault();
+    if (!passwordIsStrong(passwords.newPassword)) {
+      setPasswordState({
+        saving: false,
+        error: 'Use 12–128 characters with uppercase, lowercase, number, and symbol.',
+      });
+      return;
+    }
+    if (passwords.newPassword !== passwords.confirmation) {
+      setPasswordState({ saving: false, error: 'The new passwords do not match.' });
+      return;
+    }
+    if (passwords.currentPassword === passwords.newPassword) {
+      setPasswordState({ saving: false, error: 'Choose a different new password.' });
+      return;
+    }
+
+    setPasswordState({ saving: true, error: '' });
+    try {
+      await axiosInstance.put('/admins/change-password', {
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      });
+      window.localStorage.removeItem('access_token');
+      window.localStorage.removeItem('admin_profile');
+      navigate('/', { replace: true });
+    } catch (error) {
+      setPasswordState({
+        saving: false,
+        error: error?.response?.data?.message || error?.message || 'Could not change your password.',
+      });
     }
   };
 
@@ -91,17 +144,65 @@ export default function Settings() {
               {state.saving ? 'Saving…' : 'Save profile'}
             </button>
           </form>
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <form onSubmit={changePassword} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="font-bold text-slate-900">Password</h2>
-            <p className="mt-1 text-sm text-slate-600">Send a one-time, 15-minute reset link to your verified admin email.</p>
-            <button
-              type="button"
-              onClick={() => navigate('/reset-password')}
-              className="mt-4 rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white"
-            >
-              Reset password
-            </button>
-          </section>
+            <p className="mt-1 text-sm text-slate-600">Changing your password immediately signs out every existing admin session.</p>
+            {passwordState.error && <ErrorState message={passwordState.error} />}
+            <label className="block text-sm font-medium text-slate-700">
+              Current password
+              <input
+                required
+                type="password"
+                autoComplete="current-password"
+                value={passwords.currentPassword}
+                onChange={event => setPasswords(current => ({ ...current, currentPassword: event.target.value }))}
+                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
+              />
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              New password
+              <input
+                required
+                type="password"
+                minLength={12}
+                maxLength={128}
+                autoComplete="new-password"
+                value={passwords.newPassword}
+                onChange={event => setPasswords(current => ({ ...current, newPassword: event.target.value }))}
+                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
+              />
+              <span className="mt-1 block text-xs text-slate-500">12+ characters with uppercase, lowercase, number, and symbol.</span>
+            </label>
+            <label className="block text-sm font-medium text-slate-700">
+              Confirm new password
+              <input
+                required
+                type="password"
+                minLength={12}
+                maxLength={128}
+                autoComplete="new-password"
+                value={passwords.confirmation}
+                onChange={event => setPasswords(current => ({ ...current, confirmation: event.target.value }))}
+                className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
+              />
+            </label>
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={passwordState.saving}
+                className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+              >
+                {passwordState.saving ? 'Updating…' : 'Change password'}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/reset-password')}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-700"
+              >
+                Forgot current password
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </AdminLayout>
