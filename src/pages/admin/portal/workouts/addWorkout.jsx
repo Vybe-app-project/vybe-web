@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import { X, Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import axiosInstance from '../../../../config/axios';
 import { uploadMedia } from '../../../../api/uploads';
+import { withNewManagedImage } from '../../../../utils/managedMediaPayload';
 import { FiUpload } from "react-icons/fi";
 
 const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
@@ -42,11 +43,18 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="exercise-dialog-title"
+    >
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b">
-          <h3 className="text-lg font-semibold text-gray-900">Add Exercise</h3>
+          <h3 id="exercise-dialog-title" className="text-lg font-semibold text-gray-900">Add Exercise</h3>
           <button
+            type="button"
+            aria-label="Close exercise editor"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
@@ -56,10 +64,11 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
         
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="exercise-name" className="block text-sm font-medium text-gray-700 mb-2">
               Exercise Name *
             </label>
             <input
+              id="exercise-name"
               type="text"
               value={exercise.name}
               onChange={(e) => setExercise({ ...exercise, name: e.target.value })}
@@ -71,8 +80,9 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Sets</label>
+              <label htmlFor="exercise-sets" className="block text-sm font-medium text-gray-700 mb-2">Sets</label>
               <input
+                id="exercise-sets"
                 type="number"
                 value={exercise.sets}
                 onChange={(e) => setExercise({ ...exercise, sets: e.target.value })}
@@ -82,8 +92,9 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Reps</label>
+              <label htmlFor="exercise-reps" className="block text-sm font-medium text-gray-700 mb-2">Reps</label>
               <input
+                id="exercise-reps"
                 type="number"
                 value={exercise.reps}
                 onChange={(e) => setExercise({ ...exercise, reps: e.target.value })}
@@ -96,8 +107,9 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Duration (seconds)</label>
+              <label htmlFor="exercise-duration" className="block text-sm font-medium text-gray-700 mb-2">Duration (seconds)</label>
               <input
+                id="exercise-duration"
                 type="number"
                 value={exercise.duration}
                 onChange={(e) => setExercise({ ...exercise, duration: e.target.value })}
@@ -107,8 +119,9 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Rest (sec)</label>
+              <label htmlFor="exercise-rest" className="block text-sm font-medium text-gray-700 mb-2">Rest (sec)</label>
               <input
+                id="exercise-rest"
                 type="number"
                 value={exercise.rest}
                 onChange={(e) => setExercise({ ...exercise, rest: e.target.value })}
@@ -120,8 +133,9 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Calories Burned</label>
+            <label htmlFor="exercise-calories" className="block text-sm font-medium text-gray-700 mb-2">Calories Burned</label>
             <input
+              id="exercise-calories"
               type="number"
               value={exercise.caloriesBurned}
               onChange={(e) => setExercise({ ...exercise, caloriesBurned: e.target.value })}
@@ -132,8 +146,9 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <label htmlFor="exercise-notes" className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
             <textarea
+              id="exercise-notes"
               value={exercise.notes}
               onChange={(e) => setExercise({ ...exercise, notes: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -144,13 +159,15 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
 
           <div className="flex space-x-3 pt-4">
             <button
+              type="button"
               onClick={onClose}
               className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition-colors"
             >
               Cancel
             </button>
 
-                        <button
+            <button
+              type="button"
               onClick={handleSubmit}
               disabled={!exercise.name.trim()}
               className="flex-1 bg-primary text-white py-2 px-4 rounded-md hover:bg-teal-700 disabled:bg-teal-200 transition-colors flex items-center justify-center"
@@ -222,6 +239,9 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
     if (!formData.category) {
       newErrors.category = 'Category is required';
     }
+    if (!formData.exercises.length) {
+      newErrors.exercises = 'Add at least one exercise before saving the workout';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -234,7 +254,7 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
     setSubmitError('');
 
     try {
-      const submitData = {
+      let submitData = {
         ...formData,
         duration: formData.duration ? Number(formData.duration) : undefined,
         caloriesBurned: formData.caloriesBurned ? Number(formData.caloriesBurned) : undefined,
@@ -244,7 +264,8 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
           .filter(tag => tag.length > 0)
       };
 
-      submitData.image = file ? await uploadMedia(file) : formData.image || undefined;
+      const uploadedImage = file ? await uploadMedia(file) : undefined;
+      submitData = withNewManagedImage(submitData, uploadedImage);
 
       const endpoint = workout ? `/workouts/update/${workout._id}` : '/workouts/create';
       await axiosInstance.request({
@@ -283,6 +304,9 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
       ...formData,
       exercises: [...formData.exercises, { ...exercise, status: 'pending' }]
     });
+    if (errors.exercises) {
+      setErrors(current => ({ ...current, exercises: '' }));
+    }
   };
 
   const handleRemoveExercise = (index) => {
@@ -303,14 +327,22 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4">
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="workout-dialog-title"
+        aria-hidden={exerciseModalOpen || undefined}
+      >
         <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
 
           <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 id="workout-dialog-title" className="text-xl font-semibold text-gray-900">
               {workout ? 'Edit Workout' : 'Add New Workout'}
             </h2>
             <button
+              type="button"
+              aria-label="Close workout editor"
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -326,27 +358,35 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
             )}
             {/* Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="workout-title" className="block text-sm font-medium text-gray-700 mb-2">
                 Workout Title *
               </label>
               <input
+                id="workout-title"
                 type="text"
                 value={formData.title}
+                aria-invalid={Boolean(errors.title)}
+                aria-describedby={errors.title ? 'workout-title-error' : undefined}
                 onChange={(e) => handleChange('title', e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.title ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Enter workout title"
               />
-              {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+              {errors.title && (
+                <p id="workout-title-error" role="alert" className="text-red-500 text-sm mt-1">
+                  {errors.title}
+                </p>
+              )}
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="workout-description" className="block text-sm font-medium text-gray-700 mb-2">
                 Description
               </label>
               <textarea
+                id="workout-description"
                 value={formData.description}
                 onChange={(e) => handleChange('description', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -358,11 +398,14 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
             {/* Category and Level */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="workout-category" className="block text-sm font-medium text-gray-700 mb-2">
                   Category *
                 </label>
                 <select
+                  id="workout-category"
                   value={formData.category}
+                  aria-invalid={Boolean(errors.category)}
+                  aria-describedby={errors.category ? 'workout-category-error' : undefined}
                   onChange={(e) => handleChange('category', e.target.value)}
                   className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     errors.category ? 'border-red-500' : 'border-gray-300'
@@ -374,14 +417,19 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
                     </option>
                   ))}
                 </select>
-                {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+                {errors.category && (
+                  <p id="workout-category-error" role="alert" className="text-red-500 text-sm mt-1">
+                    {errors.category}
+                  </p>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="workout-level" className="block text-sm font-medium text-gray-700 mb-2">
                   Level
                 </label>
                 <select
+                  id="workout-level"
                   value={formData.level}
                   onChange={(e) => handleChange('level', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -398,10 +446,11 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
             {/* Duration and Calories */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="workout-duration" className="block text-sm font-medium text-gray-700 mb-2">
                   Duration (minutes)
                 </label>
                 <input
+                  id="workout-duration"
                   type="number"
                   value={formData.duration}
                   onChange={(e) => handleChange('duration', e.target.value)}
@@ -412,10 +461,11 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="workout-calories" className="block text-sm font-medium text-gray-700 mb-2">
                   Calories Burned
                 </label>
                 <input
+                  id="workout-calories"
                   type="number"
                   value={formData.caloriesBurned}
                   onChange={(e) => handleChange('caloriesBurned', e.target.value)}
@@ -426,39 +476,37 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
               </div>
             </div>
 
-            {/* Image URL */}
+            {/* Managed workout image */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image URL
-              </label>
-              {/* <input
-                type="url"
-                value={formData.image}
-                onChange={(e) => handleChange('image', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://example.com/workout-image.jpg"
-              /> */}
-         <div
-      onClick={handleClick}
-      className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-400 rounded-2xl cursor-pointer hover:border-blue-500 transition"
-    >
-      <FiUpload className="text-4xl text-gray-500 mb-2" />
-      <p className="text-gray-600">Click to upload</p>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        className="hidden"
-      />
-    </div>
+              <p className="block text-sm font-medium text-gray-700 mb-2">
+                Workout image
+              </p>
+              <button
+                type="button"
+                onClick={handleClick}
+                className="flex h-40 w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-400 transition hover:border-blue-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                <FiUpload className="mb-2 text-4xl text-gray-500" />
+                <p className="text-gray-600">{file ? file.name : 'Click to upload'}</p>
+              </button>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label="Choose workout image"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="sr-only"
+                tabIndex={-1}
+              />
             </div>
 
             {/* Hashtags */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="workout-hashtags" className="block text-sm font-medium text-gray-700 mb-2">
                 Hashtags
               </label>
               <input
+                id="workout-hashtags"
                 type="text"
                 value={formData.hashtags}
                 onChange={(e) => handleChange('hashtags', e.target.value)}
@@ -470,9 +518,9 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
             {/* Exercises Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <label className="block text-sm font-medium text-gray-700">
+                <h3 className="block text-sm font-medium text-gray-700">
                   Exercises ({formData.exercises.length})
-                </label>
+                </h3>
                 <button
                   type="button"
                   onClick={() => setExerciseModalOpen(true)}
@@ -482,6 +530,11 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
                   Add Exercise
                 </button>
               </div>
+              {errors.exercises && (
+                <p role="alert" className="mb-3 text-sm text-red-500">
+                  {errors.exercises}
+                </p>
+              )}
 
               {formData.exercises.length > 0 && (
                 <div className="space-y-3 max-h-60 overflow-y-auto border rounded-lg p-3">
@@ -501,6 +554,7 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
                       </div>
                       <button
                         type="button"
+                        aria-label={`Remove ${exercise.name || `exercise ${index + 1}`}`}
                         onClick={() => handleRemoveExercise(index)}
                         className="text-red-500 hover:text-red-700 transition-colors ml-3"
                       >
@@ -515,7 +569,8 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
             {/* Action Buttons */}
             <div className="flex space-x-3 pt-4 border-t">
 
-                              <button
+              <button
+                type="button"
                 onClick={onClose}
                 disabled={isLoading}
                 className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 disabled:bg-gray-200 transition-colors"
@@ -524,6 +579,7 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
               </button>
 
               <button
+                type="button"
                 onClick={handleSubmit}
                 disabled={isLoading}
                 className="flex-1 bg-primary text-white py-2 px-4 rounded-md hover:bg-teal-700 disabled:bg-teal-200 transition-colors flex items-center justify-center"

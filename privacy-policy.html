@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Vybe Privacy Policy">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Vybe Privacy Policy</title>
     <style>
         :root {
@@ -153,7 +154,7 @@
         <p>When you use a location-based feature and grant device permission, Vybe may collect precise location coordinates to find nearby gyms, identify a location, or create a location-based community. We may also derive approximate location from your IP address and collect a location you enter or select. Location access is optional; you can deny or revoke it in your device settings, although nearby-gym and similar features may then be limited. A location or gym you attach to content may be visible to the audience for that content.</p>
 
         <h3>Contacts</h3>
-        <p>Vybe accesses contacts only after you choose a contact-based feature, such as “Find Friends from Contacts” or inviting a friend, and grant permission. For friend matching, the app reads email addresses and phone numbers from your device and submits those identifiers to Vybe to look for matching accounts. Vybe does not create or retain a copy of your full address book as a saved contact list. An invitation sent through your device’s messaging app is controlled by you and that messaging provider. You can revoke contacts permission in your device settings.</p>
+        <p>Vybe accesses contacts only after you choose a contact-based feature, such as “Find Friends from Contacts” or inviting a friend, and grant permission. For friend matching, the app normalizes email addresses and phone numbers on your device, converts them to one-way SHA-256 hashes, and submits only bounded batches of those hashes to look for matching accounts. Raw address-book identifiers, contact names, notes, photos, postal addresses, and a saved copy of your address book are not uploaded. An invitation sent through your device’s messaging app is controlled by you and that messaging provider. You can revoke contacts permission in your device settings.</p>
 
         <h3>Device, push notification, and diagnostic information</h3>
         <p>We automatically receive technical and usage information needed to run and protect the Service, such as IP address, device and operating-system type, app version, language, request and event timestamps, pages or features used, and server logs. If you enable notifications, we collect a device push token and notification preferences. We may also receive error reports and basic diagnostic data when the app or a service request fails.</p>

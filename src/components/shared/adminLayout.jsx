@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   MdDashboard, 
   MdAdminPanelSettings, 
@@ -6,15 +6,18 @@ import {
   MdFitnessCenter, 
   MdReport,
   MdSupportAgent,
+  MdHistory,
   MdSettings, 
   MdLogout,
   MdMenu,
   MdClose
 } from 'react-icons/md';
 import { useAdminRouter } from '../../routing';
+import { useAdminSession } from '../../context/admin-session';
+import { clearAdminSession } from '../../utils/adminAuthStorage';
 
 // Sidebar Component
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = ({ isOpen, toggleSidebar, isSuperAdmin }) => {
   const { navigate, route } = useAdminRouter();
 
   // Function to check if a route is active
@@ -31,7 +34,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   const menuItems = [
     { name: 'Dashboard', icon: MdDashboard, path: '/home' },
-    { name: 'Admins', icon: MdAdminPanelSettings, path: '/admins' },
+    ...(isSuperAdmin
+      ? [
+        { name: 'Admins', icon: MdAdminPanelSettings, path: '/admins' },
+        { name: 'Audit log', icon: MdHistory, path: '/audit-log' },
+      ]
+      : []),
     { name: 'Users', icon: MdPeople, path: '/users' },
     { name: 'Workouts', icon: MdFitnessCenter, path: '/workouts' },
     { name: 'Moderation', icon: MdReport, path: '/reports' },
@@ -46,32 +54,38 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   // Handle navigation (for SPA)
   const handleNavigation = (path, isLogout = false) => {
     if (isLogout) {
-      window.localStorage.removeItem("access_token");
-      window.localStorage.removeItem("admin_profile");
+      clearAdminSession();
       navigate("/", { replace: true });
+      if (isOpen) toggleSidebar();
       return;
     }
     
     navigate(path);
+    if (isOpen) toggleSidebar();
   };
 
   return (
     <>
       {/* Mobile Overlay */}
       {isOpen && (
-        <div 
+        <button
+          type="button"
+          aria-label="Close admin navigation"
           className="fixed inset-0 bg-black bg-opacity-60 z-40 lg:hidden backdrop-blur-sm"
           onClick={toggleSidebar}
         />
       )}
       
       {/* Sidebar */}
-      <div className={`
+      <div
+        id="admin-sidebar"
+        className={`
         fixed left-0 top-0 h-full w-72 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900
         shadow-2xl z-50 transform transition-all duration-300 ease-out border-r border-slate-700/50
         ${isOpen ? 'translate-x-0' : '-translate-x-full'} 
         lg:translate-x-0 lg:static lg:z-auto flex flex-col
-      `}>
+      `}
+      >
         {/* Logo Section */}
         <div className="flex items-center justify-between p-6 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/50 to-transparent">
           <div className="flex items-center space-x-3">
@@ -83,6 +97,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             </div>
           </div>
           <button
+            type="button"
+            aria-label="Close admin navigation"
             onClick={toggleSidebar}
             className="lg:hidden text-slate-400 hover:text-white transition-colors p-1 rounded-md hover:bg-slate-700/50"
           >
@@ -91,7 +107,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         </div>
 
         {/* Main Navigation */}
-        <nav className="flex-1 mt-8 px-4">
+        <nav aria-label="Admin navigation" className="flex-1 mt-8 px-4">
           <div className="mb-6">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3 mb-3">
               Main Navigation
@@ -102,6 +118,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 return (
                   <li key={item.name}>
                     <button
+                      type="button"
+                      aria-current={isActive ? 'page' : undefined}
                       onClick={() => handleNavigation(item.path)}
                       className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl
                                transition-all duration-200 group cursor-pointer relative overflow-hidden
@@ -140,6 +158,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 return (
                   <li key={item.name}>
                     <button
+                      type="button"
+                      aria-current={isActive && !item.isLogout ? 'page' : undefined}
                       onClick={() => handleNavigation(item.path, item.isLogout)}
                       className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium
                                rounded-xl transition-all duration-200 group cursor-pointer
@@ -178,7 +198,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 };
 
 // Header Component
-const Header = ({ toggleSidebar, adminName, adminRole, title,subTitle }) => {
+const Header = ({
+  toggleSidebar,
+  sidebarOpen,
+  adminName,
+  adminRole,
+  title,
+  subTitle,
+}) => {
   const { navigate } = useAdminRouter();
   return (
     <header className="bg-white/80 backdrop-blur-xl shadow-sm border-b border-slate-200/60 px-4 py-4 sticky top-0 z-30">
@@ -186,6 +213,10 @@ const Header = ({ toggleSidebar, adminName, adminRole, title,subTitle }) => {
         {/* Left Side - Mobile Menu Button */}
         <div className="flex items-center space-x-4">
           <button
+            type="button"
+            aria-label="Open admin navigation"
+            aria-controls="admin-sidebar"
+            aria-expanded={sidebarOpen}
             onClick={toggleSidebar}
             className="lg:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors"
           >
@@ -235,14 +266,17 @@ const Header = ({ toggleSidebar, adminName, adminRole, title,subTitle }) => {
 // Admin Layout Component
 const AdminLayout = ({ children, adminName, adminRole, title,subTitle }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  let storedProfile = {};
-  try {
-    storedProfile = JSON.parse(window.localStorage.getItem('admin_profile') || '{}');
-  } catch {
-    storedProfile = {};
-  }
-  const resolvedName = adminName || storedProfile.fullName || 'Vybe Admin';
-  const resolvedRole = adminRole || storedProfile.role?.replace('_', ' ') || 'Admin';
+  const {
+    admin,
+    isSuperAdmin,
+    loading: sessionLoading,
+  } = useAdminSession();
+  const resolvedName = adminName || admin?.fullName || (
+    sessionLoading ? 'Validating…' : 'Vybe Admin'
+  );
+  const resolvedRole = adminRole
+    || admin?.role?.replace('_', ' ')
+    || 'Admin';
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -251,14 +285,19 @@ const AdminLayout = ({ children, adminName, adminRole, title,subTitle }) => {
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100/50">
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        toggleSidebar={toggleSidebar}
+        isSuperAdmin={isSuperAdmin}
+      />
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden lg:ml-0">
         {/* Header */}
         <Header 
           title={title}
-          toggleSidebar={toggleSidebar} 
+          toggleSidebar={toggleSidebar}
+          sidebarOpen={sidebarOpen}
           adminName={resolvedName}
           subTitle={subTitle}
           adminRole={resolvedRole}

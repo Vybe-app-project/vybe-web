@@ -22,6 +22,15 @@ const updatedMessageFrom = (data, fallback) => {
   return updated || fallback;
 };
 
+const paginationFrom = (data, fallbackPage) => {
+  const value = data?.pagination || data?.data?.pagination || {};
+  return {
+    page: Number(value.page) || fallbackPage,
+    pages: Number(value.pages) || 0,
+    total: Number(value.total) || 0,
+  };
+};
+
 const formattedDate = (value) => {
   if (!value) return 'Time unavailable';
   const date = new Date(value);
@@ -31,27 +40,42 @@ const formattedDate = (value) => {
 export default function SupportInbox() {
   const [filter, setFilter] = useState('open');
   const [messages, setMessages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pages: 0,
+    total: 0,
+  });
   const [state, setState] = useState({ loading: true, error: '', updating: '' });
 
-  const loadMessages = useCallback(async () => {
+  const loadMessages = useCallback(async (signal) => {
     setState(current => ({ ...current, loading: true, error: '' }));
     try {
       const { data } = await axiosInstance.get('/admin/support', {
-        params: { status: filter, limit: 100 },
+        ...(signal ? { signal } : {}),
+        params: {
+          status: filter,
+          page,
+          limit: 100,
+        },
       });
       setMessages(messagesFrom(data));
+      setPagination(paginationFrom(data, page));
       setState({ loading: false, error: '', updating: '' });
     } catch (error) {
+      if (signal?.aborted || error?.code === 'ERR_CANCELED') return;
       setState({
         loading: false,
         updating: '',
         error: error?.response?.data?.message || error?.message || 'Could not load support requests.',
       });
     }
-  }, [filter]);
+  }, [filter, page]);
 
   useEffect(() => {
-    loadMessages();
+    const controller = new AbortController();
+    loadMessages(controller.signal);
+    return () => controller.abort();
   }, [loadMessages]);
 
   const updateStatus = async (supportMessage, status) => {
@@ -91,7 +115,10 @@ export default function SupportInbox() {
                 key={status}
                 type="button"
                 aria-pressed={filter === status}
-                onClick={() => setFilter(status)}
+                onClick={() => {
+                  setPage(1);
+                  setFilter(status);
+                }}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold capitalize transition ${
                   filter === status
                     ? 'bg-white text-slate-900 shadow-sm'
@@ -175,6 +202,34 @@ export default function SupportInbox() {
               );
             })}
           </div>
+        )}
+        {!state.loading && (pagination.pages > 1 || page > 1) && (
+          <nav
+            aria-label="Support inbox pages"
+            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3"
+          >
+            <p className="text-sm text-slate-600">
+              Page {pagination.page} of {pagination.pages} · {pagination.total} requests
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={page <= 1}
+                onClick={() => setPage(current => Math.max(1, current - 1))}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={page >= pagination.pages}
+                onClick={() => setPage(current => current + 1)}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </nav>
         )}
       </div>
     </AdminLayout>

@@ -14,3 +14,18 @@ Object.defineProperty(window, 'localStorage', {
     },
   },
 });
+
+const sessionValues = new Map();
+Object.defineProperty(window, 'sessionStorage', {
+  configurable: true,
+  value: {
+    clear: () => sessionValues.clear(),
+    getItem: key => sessionValues.get(String(key)) ?? null,
+    key: index => [...sessionValues.keys()][index] ?? null,
+    removeItem: key => sessionValues.delete(String(key)),
+    setItem: (key, value) => sessionValues.set(String(key), String(value)),
+    get length() {
+      return sessionValues.size;
+    },
+  },
+});
