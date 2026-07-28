@@ -141,12 +141,13 @@
         <ul>
             <li>posts, captions, comments, likes, saves, follows, community and gym activity, reports, and other social interactions;</li>
             <li>photos and videos, including profile images, post media, and progress photos;</li>
+            <li>livestream video and microphone audio that you choose to broadcast, plus the broadcast title, audience, chat, reactions, viewers, moderation state, and session events;</li>
             <li>direct and group chat messages and related information such as participants, timestamps, delivery or read status, and moderation actions; and</li>
             <li>information you send when requesting support, reporting content, or communicating with us.</li>
         </ul>
 
         <h3>Fitness, health, and nutrition information</h3>
-        <p>Depending on the features you use, we collect information you enter about workouts, exercise history, workout plans, goals, activity, meals, foods, nutrition, hydration, weight or body measurements, progress, achievements, and related notes or photos. This information may reveal sensitive details about your health or physical condition. We use it to provide the tracking, planning, progress, and sharing features you request. We do not use health or fitness information for third-party targeted advertising.</p>
+        <p>Depending on the features you use, we collect information you enter about workouts, exercise history, workout plans, goals, activity, meals, foods, nutrition, hydration, weight or body measurements, progress, achievements, and related notes or photos. This information may reveal sensitive details about your health or physical condition. We use it to provide the tracking, planning, progress, and sharing features you request. Logged meals are private by default. A meal appears in Community Meals only after you explicitly share it; health notes, meal-scan diagnostics, and confidence metadata are not included in that public response. We do not use health or fitness information for third-party targeted advertising.</p>
 
         <h3>Location information</h3>
         <p>When you use a location-based feature and grant device permission, Vybe may collect precise location coordinates to find nearby gyms, identify a location, or create a location-based community. We may also derive approximate location from your IP address and collect a location you enter or select. Location access is optional; you can deny or revoke it in your device settings, although nearby-gym and similar features may then be limited. A location or gym you attach to content may be visible to the audience for that content.</p>
@@ -156,6 +157,7 @@
 
         <h3>Device, push notification, and diagnostic information</h3>
         <p>We automatically receive technical and usage information needed to run and protect the Service, such as IP address, device and operating-system type, app version, language, request and event timestamps, pages or features used, and server logs. If you enable notifications, we collect a device push token and notification preferences. We may also receive error reports and basic diagnostic data when the app or a service request fails.</p>
+        <p>Livestream peer connections use a Vybe-operated relay so hosts and viewers do not receive one another’s direct network candidates. The API and relay necessarily process source IP addresses, short-lived relay credentials, connection state, and traffic metadata while establishing and carrying the session. Vybe does not record or persist the livestream audio or video, although a participant may be able to make a recording using their device or other tools.</p>
 
         <h3>Information from other sources</h3>
         <p>We may receive information from other users when they interact with or report your content, and from service providers that help us detect fraud, deliver the Service, or troubleshoot problems. The information we receive depends on the feature and the permissions you grant.</p>
@@ -178,7 +180,7 @@
         <h2>3. How we disclose information</h2>
 
         <h3>Other users and the public</h3>
-        <p>Your profile and content may be visible to other users or the public according to the feature and your settings. People in a chat can see messages and media sent to that chat. Likes, comments, follows, gym or community participation, and other social actions may be visible to affected users. Do not post information you do not want your selected audience to see.</p>
+        <p>Your profile and content may be visible to other users or the public according to the feature and your settings. People in a chat can see messages and media sent to that chat. A livestream is visible only to the public, followers, or invited accounts according to the audience selected by its host. Likes, comments, follows, gym or community participation, and other social actions may be visible to affected users. Do not post or broadcast information you do not want your selected audience to see.</p>
 
         <h3>Processors and service providers</h3>
         <p>We disclose only the information reasonably needed to vendors that process data for us under contractual or legal obligations. These providers may include:</p>
@@ -203,12 +205,13 @@
             <li><strong>Location and contacts:</strong> You can decline or revoke these permissions in iOS or Android settings.</li>
             <li><strong>Notifications:</strong> You can adjust notification preferences in Vybe and in your device settings.</li>
             <li><strong>Messages and public content:</strong> Review the audience and information before sharing. Other people may save or copy information they can see.</li>
+            <li><strong>Meals and livestreams:</strong> Meal logs stay private unless you publish an entry to Community Meals. Before starting a livestream, choose its audience and review what the camera and microphone can capture. Camera and microphone permission can be revoked in device settings.</li>
             <li><strong>Account deletion:</strong> You can delete your account from the app by opening <strong>Profile</strong>, opening <strong>Settings</strong>, selecting <strong>Delete Account</strong>, and confirming. See the <a href="account-deletion.html">account deletion page</a> for details and a fallback method.</li>
         </ul>
 
         <h2>5. Retention and account deletion</h2>
         <p>We keep personal information only as long as reasonably necessary for the purposes described in this Policy. The period depends on the type of data, whether your account remains active, the sensitivity of the information, operational and security needs, and legal obligations.</p>
-        <p>When you delete your account, we delete or de-identify account information and associated personal data from active systems, subject to limited exceptions. We may retain narrowly limited information where required to comply with law, resolve disputes, prevent fraud or abuse, protect safety, or enforce agreements. Residual copies may remain in protected backups until those backups are overwritten through the ordinary backup cycle. Information that other people copied or shared outside Vybe is not under our control.</p>
+        <p>When you delete your account, we delete or de-identify account information and associated personal data from active systems, subject to limited exceptions. Messages and managed media that you authored are removed. Messages authored by other participants remain available to those participants after your account reference is removed. We may retain narrowly limited information where required to comply with law, resolve disputes, prevent fraud or abuse, protect safety, or enforce agreements. Residual copies may remain in protected backups until those backups are overwritten through the ordinary backup cycle. Information that other people copied or shared outside Vybe is not under our control.</p>
 
         <h2>6. Security</h2>
         <p>We use administrative, technical, and physical safeguards designed to protect personal information, including access controls, protected credentials, transport encryption, and monitoring appropriate to the Service. No transmission or storage method is completely secure, so we cannot guarantee absolute security. Protect your password, use a unique credential, and notify us if you suspect unauthorized account access.</p>
