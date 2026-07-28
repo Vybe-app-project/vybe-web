@@ -5,6 +5,7 @@ import { useAdminRouter } from '../../../routing';
 
 const strongEnough = (value) => (
   value.length >= 12
+  && value.length <= 128
   && /[a-z]/.test(value)
   && /[A-Z]/.test(value)
   && /\d/.test(value)
@@ -12,10 +13,16 @@ const strongEnough = (value) => (
 );
 
 export default function ResetAdminPassword() {
-  const token = useMemo(
-    () => new URLSearchParams(window.location.search).get('token') || '',
-    [],
-  );
+  const resetContext = useMemo(() => {
+    const search = new URLSearchParams(window.location.search);
+    return {
+      token: search.get('token') || '',
+      audience: search.get('audience') === 'user' ? 'user' : 'admin',
+    };
+  }, []);
+  const { token, audience } = resetContext;
+  const isUserReset = audience === 'user';
+  const endpointPrefix = isUserReset ? '/auth' : '/admins';
   const { navigate } = useAdminRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,11 +34,11 @@ export default function ResetAdminPassword() {
     event.preventDefault();
     setStatus({ loading: true, error: '', success: '' });
     try {
-      const { data } = await axiosInstance.post('/admins/request-reset', { email });
+      const { data } = await axiosInstance.post(`${endpointPrefix}/request-reset`, { email });
       setStatus({
         loading: false,
         error: '',
-        success: data?.message || 'If that admin account exists, reset instructions have been sent.',
+        success: data?.message || 'If that account exists, reset instructions have been sent.',
       });
     } catch (error) {
       setStatus({
@@ -59,7 +66,7 @@ export default function ResetAdminPassword() {
 
     setStatus({ loading: true, error: '', success: '' });
     try {
-      await axiosInstance.post('/admins/reset-password', { token, password });
+      await axiosInstance.post(`${endpointPrefix}/reset-password`, { token, password });
       setStatus({ loading: false, error: '', success: 'Password updated. You can now sign in.' });
     } catch (error) {
       setStatus({
@@ -74,12 +81,14 @@ export default function ResetAdminPassword() {
     <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
       <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
         <h1 className="text-2xl font-bold text-slate-900">
-          {token ? 'Choose a new password' : 'Reset admin password'}
+          {token
+            ? 'Choose a new password'
+            : `Reset ${isUserReset ? 'Vybe' : 'admin'} password`}
         </h1>
         <p className="mt-2 text-sm text-slate-600">
           {token
             ? 'The reset link expires after 15 minutes and can only be used once.'
-            : 'Enter the email address attached to your admin account.'}
+            : `Enter the email address attached to your ${isUserReset ? 'Vybe' : 'admin'} account.`}
         </p>
 
         <form className="mt-6 space-y-4" onSubmit={token ? resetPassword : requestReset}>
@@ -104,6 +113,7 @@ export default function ResetAdminPassword() {
                     required
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
+                    maxLength={128}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 pr-11"
@@ -124,6 +134,7 @@ export default function ResetAdminPassword() {
                   required
                   type="password"
                   autoComplete="new-password"
+                  maxLength={128}
                   value={confirmation}
                   onChange={(event) => setConfirmation(event.target.value)}
                   className="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2"
@@ -142,13 +153,22 @@ export default function ResetAdminPassword() {
           >
             {status.loading ? 'Working…' : token ? 'Update password' : 'Send reset link'}
           </button>
-          <button
-            type="button"
-            onClick={() => navigate('/', { replace: true })}
-            className="w-full px-4 py-2 text-sm font-medium text-slate-600"
-          >
-            Back to sign in
-          </button>
+          {isUserReset ? (
+            <a
+              href={new URL('../../', window.location.href).toString()}
+              className="block w-full px-4 py-2 text-center text-sm font-medium text-slate-600"
+            >
+              Back to Vybe
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate('/', { replace: true })}
+              className="w-full px-4 py-2 text-sm font-medium text-slate-600"
+            >
+              Back to sign in
+            </button>
+          )}
         </form>
       </section>
     </main>
