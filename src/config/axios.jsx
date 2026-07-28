@@ -1,20 +1,35 @@
 import Axios from 'axios';
+import { API_BASE_URL, API_CONFIGURATION_ERROR } from './env';
 
 const axiosInstance = Axios.create({
-  baseURL: 'http://localhost:8080/api',
+  baseURL: API_BASE_URL || undefined,
+  timeout: 15_000,
 });
 
 axiosInstance.interceptors.request.use(
-  async function (config) {
-    if (localStorage) {
-      const token = localStorage.getItem('access_token');
-      config.headers.Authorization = `Bearer ${token}`;
-      config.timeout = 300000;
-      console.log("config.headers",config.headers)
+  function (config) {
+    if (API_CONFIGURATION_ERROR) {
+      return Promise.reject(new Error(API_CONFIGURATION_ERROR));
+    }
+    if (typeof window !== 'undefined') {
+      const token = window.localStorage.getItem('access_token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
   function (error) {
+    return Promise.reject(error);
+  },
+);
+
+axiosInstance.interceptors.response.use(
+  response => response,
+  error => {
+    if (error?.response?.status === 401 && typeof window !== 'undefined') {
+      window.localStorage.removeItem('access_token');
+    }
     return Promise.reject(error);
   },
 );

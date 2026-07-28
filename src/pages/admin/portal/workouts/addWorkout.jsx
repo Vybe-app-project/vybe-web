@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Plus, Trash2, Save, Loader2 } from 'lucide-react';
 import axiosInstance from '../../../../config/axios';
-import s3 from '../../../../config/aws';
+import { uploadMedia } from '../../../../api/uploads';
 import { FiUpload } from "react-icons/fi";
 
 const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
@@ -167,7 +167,8 @@ const ExerciseModal = ({ isOpen, onClose, onAddExercise }) => {
 
 export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
   const [isLoading, setIsLoading] = useState(false);
-    const [file, setFile] = useState(null);
+  const [file, setFile] = useState(null);
+  const [submitError, setSubmitError] = useState('');
   const [exerciseModalOpen, setExerciseModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: workout?.title || '',
@@ -196,26 +197,6 @@ export default function AddWorkout({ isOpen, onClose, workout = null,onDone }) {
       fileInputRef.current.click();
     }
   };
-
-const handleUpload = async () => {
-  if (!file) return alert("Choose a file first!");
-
-  const params = {
-    Bucket: "vybe-direct-s3-upload",
-    Key: `posts/${Date.now()}-${file.name}`,
-    Body: file,
-    ContentType: file.type,
-  };
-
-  try {
-    const data = await s3.upload(params).promise();
-    console.log("File uploaded successfully:", data.Location);
-    return data.Location;
-  } catch (err) {
-    console.error("Error uploading file:", err);
-    alert("Upload failed!");
-  }
-};
 
   const categories = [
     { value: 'strength', label: 'Strength Training' },
@@ -250,6 +231,7 @@ const handleUpload = async () => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setSubmitError('');
 
     try {
       const submitData = {
@@ -262,13 +244,15 @@ const handleUpload = async () => {
           .filter(tag => tag.length > 0)
       };
 
-      let image = file? await handleUpload(file): null
-      submitData.image = image;
+      submitData.image = file ? await uploadMedia(file) : formData.image || undefined;
 
       const endpoint = workout ? `/workouts/update/${workout._id}` : '/workouts/create';
-      const response = await axiosInstance.post(endpoint, submitData);
+      await axiosInstance.request({
+        method: workout ? 'put' : 'post',
+        url: endpoint,
+        data: submitData,
+      });
 
-      console.log('Workout saved successfully:', response.data);
       onDone();
       
       // Reset form if creating new workout
@@ -288,8 +272,7 @@ const handleUpload = async () => {
         });
       }
     } catch (error) {
-      console.error('Error saving workout:', error);
-      // Handle error (show toast, etc.)
+      setSubmitError(error?.response?.data?.message || error?.message || 'Could not save the workout.');
     } finally {
       setIsLoading(false);
     }
@@ -336,6 +319,11 @@ const handleUpload = async () => {
           </div>
 
           <div className="p-6 space-y-6">
+            {submitError && (
+              <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {submitError}
+              </div>
+            )}
             {/* Title */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

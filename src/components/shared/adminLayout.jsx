@@ -1,49 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   MdDashboard, 
   MdAdminPanelSettings, 
   MdPeople, 
   MdFitnessCenter, 
+  MdReport,
+  MdSupportAgent,
   MdSettings, 
   MdLogout,
   MdMenu,
-  MdClose,
-  MdNotifications,
-  MdKeyboardArrowDown
+  MdClose
 } from 'react-icons/md';
-import { useNavigate } from 'react-router-dom';
+import { useAdminRouter } from '../../routing';
 
 // Sidebar Component
 const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const [currentPath, setCurrentPath] = useState('');
-  const navigate = useNavigate();
-
-  // Get current path on component mount and when location changes
-  useEffect(() => {
-    const updatePath = () => {
-      setCurrentPath(window.location.pathname);
-    };
-    
-    updatePath();
-    
-    // Listen for route changes (for SPA navigation)
-    window.addEventListener('popstate', updatePath);
-    
-    return () => {
-      window.removeEventListener('popstate', updatePath);
-    };
-  }, []);
+  const { navigate, route } = useAdminRouter();
 
   // Function to check if a route is active
-  const isActiveRoute = (_path) => {
-    let path = "/admin"+_path;
-    // Exact match
-    if (currentPath === path) return true;
+  const isActiveRoute = (path) => {
+    if (route === path) return true;
     // For dashboard, also match root admin path
-    if (path === '/admin/home' && (currentPath === '/admin' || currentPath === '/admin/')) return true;
+    if (path === '/home' && route === '/') return true;
     
     // For nested routes, check if current path starts with the menu path
-    if (path !== '/' && currentPath.startsWith(path)) return true;
+    if (path !== '/' && route.startsWith(`${path}/`)) return true;
     
     return false;
   };
@@ -53,6 +34,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
     { name: 'Admins', icon: MdAdminPanelSettings, path: '/admins' },
     { name: 'Users', icon: MdPeople, path: '/users' },
     { name: 'Workouts', icon: MdFitnessCenter, path: '/workouts' },
+    { name: 'Moderation', icon: MdReport, path: '/reports' },
+    { name: 'Support', icon: MdSupportAgent, path: '/support' },
   ];
 
   const bottomMenuItems = [
@@ -63,21 +46,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   // Handle navigation (for SPA)
   const handleNavigation = (path, isLogout = false) => {
     if (isLogout) {
-        localStorage.removeItem("access_token");
-    window.location.href = ("/admin");
+      window.localStorage.removeItem("access_token");
+      window.localStorage.removeItem("admin_profile");
+      navigate("/", { replace: true });
       return;
     }
     
-    // Update current path for immediate UI feedback
-    setCurrentPath(path);
-    
-    // For actual navigation, you might use:
-    // - React Router: navigate(path) or history.push(path)
-    // - Next.js: router.push(path)
-    // - Or regular navigation: window.location.href = path
-    
-    // For now, just updating the URL for demo purposes
-    navigate(path)
+    navigate(path);
   };
 
   return (
@@ -203,7 +178,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 };
 
 // Header Component
-const Header = ({ toggleSidebar, adminName = "John Doe", adminRole = "Super Admin", title,subTitle }) => {
+const Header = ({ toggleSidebar, adminName, adminRole, title,subTitle }) => {
+  const { navigate } = useAdminRouter();
   return (
     <header className="bg-white/80 backdrop-blur-xl shadow-sm border-b border-slate-200/60 px-4 py-4 sticky top-0 z-30">
       <div className="flex items-center justify-between">
@@ -225,16 +201,8 @@ const Header = ({ toggleSidebar, adminName = "John Doe", adminRole = "Super Admi
 
         {/* Right Side - User Info */}
         <div className="flex items-center space-x-3">
-          {/* Notifications */}
-          <button className="p-2.5 rounded-xl hover:bg-slate-100 transition-colors relative group">
-            <MdNotifications className="text-lg text-slate-600 group-hover:text-slate-800" />
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-[#00D4AA] to-[#00D4AA]/80 rounded-full text-xs text-white flex items-center justify-center font-bold shadow-lg animate-pulse">
-              3
-            </span>
-          </button>
-
           {/* User Profile */}
-          <div className="flex items-center space-x-3 bg-slate-50/80 rounded-xl px-4 py-2.5 hover:bg-slate-100/80 transition-all duration-200 cursor-pointer border border-slate-200/50 hover:border-slate-300/50">
+          <div className="flex items-center space-x-3 bg-slate-50/80 rounded-xl px-4 py-2.5 border border-slate-200/50">
             {/* Avatar */}
             <div className="w-9 h-9 bg-gradient-to-tr from-[#00D4AA] via-[#00D4AA]/80 to-[#00D4AA]/60 rounded-full flex items-center justify-center shadow-md">
               <span className="text-white font-bold text-sm">
@@ -249,7 +217,12 @@ const Header = ({ toggleSidebar, adminName = "John Doe", adminRole = "Super Admi
             </div>
 
             {/* Settings Button */}
-            <button className="p-1.5 rounded-lg hover:bg-slate-200/80 transition-colors">
+            <button
+              type="button"
+              aria-label="Open admin settings"
+              onClick={() => navigate('/settings')}
+              className="p-1.5 rounded-lg hover:bg-slate-200/80 transition-colors"
+            >
               <MdSettings className="text-base text-slate-600" />
             </button>
           </div>
@@ -262,6 +235,14 @@ const Header = ({ toggleSidebar, adminName = "John Doe", adminRole = "Super Admi
 // Admin Layout Component
 const AdminLayout = ({ children, adminName, adminRole, title,subTitle }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  let storedProfile = {};
+  try {
+    storedProfile = JSON.parse(window.localStorage.getItem('admin_profile') || '{}');
+  } catch {
+    storedProfile = {};
+  }
+  const resolvedName = adminName || storedProfile.fullName || 'Vybe Admin';
+  const resolvedRole = adminRole || storedProfile.role?.replace('_', ' ') || 'Admin';
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -278,9 +259,9 @@ const AdminLayout = ({ children, adminName, adminRole, title,subTitle }) => {
         <Header 
           title={title}
           toggleSidebar={toggleSidebar} 
-          adminName={adminName}
+          adminName={resolvedName}
           subTitle={subTitle}
-          adminRole={adminRole}
+          adminRole={resolvedRole}
         />
         
         {/* Main Content Area */}

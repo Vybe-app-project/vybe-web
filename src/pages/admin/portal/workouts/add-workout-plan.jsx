@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { X, Save, Loader2 } from 'lucide-react';
 import axiosInstance from '../../../../config/axios';
-import s3 from '../../../../config/aws';
+import { uploadMedia } from '../../../../api/uploads';
 import { FiUpload } from "react-icons/fi";
 
 export default function AddWorkoutPlan({ isOpen, onClose, workoutPlan = null,onDone }) {
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState(null);
+  const [submitError, setSubmitError] = useState('');
   const [formData, setFormData] = useState({
     name: workoutPlan?.title || '',
     description: workoutPlan?.description || '',
@@ -30,26 +31,6 @@ export default function AddWorkoutPlan({ isOpen, onClose, workoutPlan = null,onD
   const handleClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!file) return alert("Choose a file first!");
-
-    const params = {
-      Bucket: "vybe-direct-s3-upload",
-      Key: `workout-plans/${Date.now()}-${file.name}`,
-      Body: file,
-      ContentType: file.type,
-    };
-
-    try {
-      const data = await s3.upload(params).promise();
-      console.log("File uploaded successfully:", data.Location);
-      return data.Location;
-    } catch (err) {
-      console.error("Error uploading file:", err);
-      alert("Upload failed!");
     }
   };
 
@@ -91,6 +72,7 @@ export default function AddWorkoutPlan({ isOpen, onClose, workoutPlan = null,onD
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setSubmitError('');
 
     try {
       const submitData = {
@@ -102,13 +84,15 @@ export default function AddWorkoutPlan({ isOpen, onClose, workoutPlan = null,onD
           .filter(tag => tag.length > 0)
       };
 
-      let image = file ? await handleUpload(file) : null;
-      submitData.image = image;
+      submitData.image = file ? await uploadMedia(file) : formData.image || undefined;
 
       const endpoint = workoutPlan ? `/workouts/update-plan/${workoutPlan._id}` : '/workouts/create-plan';
-      const response = await axiosInstance.post(endpoint, submitData);
+      await axiosInstance.request({
+        method: workoutPlan ? 'put' : 'post',
+        url: endpoint,
+        data: submitData,
+      });
 
-      console.log('Workout plan saved successfully:', response.data);
       onDone();
       
       // Reset form if creating new workout plan
@@ -127,8 +111,7 @@ export default function AddWorkoutPlan({ isOpen, onClose, workoutPlan = null,onD
         setFile(null);
       }
     } catch (error) {
-      console.error('Error saving workout plan:', error);
-      // Handle error (show toast, etc.)
+      setSubmitError(error?.response?.data?.message || error?.message || 'Could not save the workout plan.');
     } finally {
       setIsLoading(false);
     }
@@ -159,6 +142,11 @@ export default function AddWorkoutPlan({ isOpen, onClose, workoutPlan = null,onD
         </div>
 
         <div className="p-6 space-y-6">
+          {submitError && (
+            <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {submitError}
+            </div>
+          )}
           {/* Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
