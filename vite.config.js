@@ -2,8 +2,21 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
+const basePath = process.env.VITE_BASE_PATH?.trim() || '/admin/';
+if (
+  !basePath.startsWith('/')
+  || !basePath.endsWith('/')
+  || basePath.includes('..')
+  || basePath.includes('//')
+) {
+  throw new Error('VITE_BASE_PATH must be an absolute path that starts and ends with "/"');
+}
+
 export default defineConfig({
-  base: '/admin/',
+  base: basePath,
+  define: {
+    'import.meta.env.VITE_BASE_PATH': JSON.stringify(basePath),
+  },
   plugins: [react(), tailwindcss()],
   build: {
     outDir: 'build',
@@ -28,7 +41,7 @@ export default defineConfig({
     restoreMocks: true,
     environmentOptions: {
       jsdom: {
-        url: 'https://admin.example.invalid/admin/',
+        url: `https://admin.example.invalid${basePath}`,
       },
     },
   },

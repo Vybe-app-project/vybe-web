@@ -1,10 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-const ADMIN_BASE_PATH = '/admin';
+export const ADMIN_BASE_PATH = (
+  import.meta.env.VITE_BASE_PATH
+  || import.meta.env.BASE_URL
+  || '/admin/'
+).replace(/\/+$/, '') || '/';
 const RoutingContext = createContext(null);
 
 const currentRoute = () => {
   const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (ADMIN_BASE_PATH === '/') return pathname;
   if (pathname === ADMIN_BASE_PATH) return '/';
   if (pathname.startsWith(`${ADMIN_BASE_PATH}/`)) {
     return pathname.slice(ADMIN_BASE_PATH.length) || '/';
@@ -23,7 +28,11 @@ export const AdminRouter = ({ children }) => {
 
   const navigate = useCallback((destination, options = {}) => {
     const normalized = destination === '/' ? '/' : `/${destination.replace(/^\/+/, '')}`;
-    const target = normalized === '/' ? ADMIN_BASE_PATH : `${ADMIN_BASE_PATH}${normalized}`;
+    const target = ADMIN_BASE_PATH === '/'
+      ? normalized
+      : normalized === '/'
+        ? ADMIN_BASE_PATH
+        : `${ADMIN_BASE_PATH}${normalized}`;
     window.history[options.replace ? 'replaceState' : 'pushState']({}, '', target);
     setRoute(normalized);
   }, []);

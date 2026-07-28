@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { AdminRouter } from '../../../routing';
+import { ADMIN_BASE_PATH, AdminRouter } from '../../../routing';
 
 const { post } = vi.hoisted(() => ({ post: vi.fn() }));
 vi.mock('../../../config/axios', () => ({
@@ -15,7 +15,7 @@ describe('password recovery audience', () => {
     window.history.replaceState(
       {},
       '',
-      '/admin/reset-password?audience=user',
+      `${ADMIN_BASE_PATH}/reset-password?audience=user`,
     );
   });
 

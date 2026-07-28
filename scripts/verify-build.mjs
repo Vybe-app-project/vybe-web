@@ -24,12 +24,27 @@ const walk = async (directory) => {
 
 await walk(buildRoot);
 const findings = [];
+const searchableContents = [];
 for (const file of files) {
   if (!/\.(?:html|css|js|json|map|txt)$/i.test(file)) continue;
   const contents = await readFile(file, 'utf8');
+  searchableContents.push(contents);
   for (const [label, pattern] of forbidden) {
     if (pattern.test(contents)) findings.push(`${relative(buildRoot, file)}: ${label}`);
   }
+}
+
+const expectedBasePath = process.env.VITE_BASE_PATH?.trim();
+if (expectedBasePath) {
+  const indexHtml = await readFile(join(buildRoot, 'index.html'), 'utf8');
+  if (!indexHtml.includes(`${expectedBasePath}assets/`)) {
+    findings.push(`index.html: assets do not use configured VITE_BASE_PATH ${expectedBasePath}`);
+  }
+}
+
+const expectedApiUrl = process.env.VITE_API_URL?.trim().replace(/\/+$/, '');
+if (expectedApiUrl && !searchableContents.some((contents) => contents.includes(expectedApiUrl))) {
+  findings.push('compiled API URL does not match configured VITE_API_URL');
 }
 
 if (findings.length) {

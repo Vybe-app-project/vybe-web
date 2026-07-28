@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 15
     env:
       VITE_API_URL: https://api.example.invalid/api
+      VITE_BASE_PATH: /admin/
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

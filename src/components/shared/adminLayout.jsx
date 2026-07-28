@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   MdDashboard, 
   MdAdminPanelSettings, 
@@ -14,30 +14,16 @@ import { useAdminRouter } from '../../routing';
 
 // Sidebar Component
 const Sidebar = ({ isOpen, toggleSidebar }) => {
-  const [currentPath, setCurrentPath] = useState('');
   const { navigate, route } = useAdminRouter();
 
-  // Get current path on component mount and when location changes
-  useEffect(() => {
-    const updatePath = () => {
-      setCurrentPath(`/admin${route === '/' ? '' : route}`);
-    };
-    
-    updatePath();
-    
-    // Listen for route changes (for SPA navigation)
-  }, [route]);
-
   // Function to check if a route is active
-  const isActiveRoute = (_path) => {
-    let path = "/admin"+_path;
-    // Exact match
-    if (currentPath === path) return true;
+  const isActiveRoute = (path) => {
+    if (route === path) return true;
     // For dashboard, also match root admin path
-    if (path === '/admin/home' && (currentPath === '/admin' || currentPath === '/admin/')) return true;
+    if (path === '/home' && route === '/') return true;
     
     // For nested routes, check if current path starts with the menu path
-    if (path !== '/' && currentPath.startsWith(path)) return true;
+    if (path !== '/' && route.startsWith(`${path}/`)) return true;
     
     return false;
   };
@@ -64,10 +50,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
       return;
     }
     
-    // Update current path for immediate UI feedback
-    setCurrentPath(`/admin${path}`);
-    
-    navigate(path)
+    navigate(path);
   };
 
   return (
