@@ -29,17 +29,31 @@ jobs:
           node-version: 20.20.2
           cache: npm
       - name: Require deployment configuration
-        run: test -n "$VITE_API_URL" && test -n "$VITE_BASE_PATH"
+        run: |
+          test "$VITE_BASE_PATH" = "/admin/"
+          case "$VITE_API_URL" in
+            https://*.invalid/*|https://*.test/*|https://localhost*|https://127.*|http://*|"")
+              echo "VITE_API_URL must be the real HTTPS release API ending in /api" >&2
+              exit 1
+              ;;
+          esac
       - run: npm ci
+      - run: npm audit --audit-level=high
+      - run: npm run lint
       - run: npm test
       - run: npm run build
       - run: npm run build:public
       - run: npm run verify:build
+      - name: Scan release source for secrets
+        run: |
+          mkdir -p "$RUNNER_TEMP/source"
+          git archive HEAD | tar -x -C "$RUNNER_TEMP/source"
+          docker run --rm -v "$RUNNER_TEMP/source:/repo" ghcr.io/gitleaks/gitleaks:v8.30.1 dir /repo --redact --no-banner
       - name: Assemble site
         run: |
           mkdir -p site/admin
           cp -R build/. site/admin/
-          for route in home admins users workouts reports support settings reset-password; do
+          for route in home admins users workouts reports support settings audit-log reset-password; do
             mkdir -p "site/admin/$route"
             cp build/index.html "site/admin/$route/index.html"
           done
