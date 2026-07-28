@@ -3,6 +3,7 @@ import { Plus, Trash2, X } from 'lucide-react';
 import AdminLayout from '../../../components/shared/adminLayout';
 import { EmptyState, ErrorState, LoadingState } from '../../../components/shared/resource-state';
 import axiosInstance from '../../../config/axios';
+import { useAdminSession } from '../../../context/admin-session';
 
 const EMPTY_FORM = { fullName: '', email: '', password: '', role: 'ADMIN' };
 const strongEnough = value => (
@@ -17,24 +18,59 @@ export default function Admins() {
   const [admins, setAdmins] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [showForm, setShowForm] = useState(false);
-  const [state, setState] = useState({ loading: true, error: '', saving: false, deleting: '' });
-  const currentAdmin = JSON.parse(window.localStorage.getItem('admin_profile') || '{}');
+  const [state, setState] = useState({
+    loading: true,
+    error: '',
+    saving: false,
+    deleting: '',
+    updating: '',
+  });
+  const {
+    admin: currentAdmin,
+    error: sessionError,
+    isSuperAdmin,
+    loading: sessionLoading,
+    refresh: refreshSession,
+  } = useAdminSession();
 
   const loadAdmins = useCallback(async () => {
+    if (sessionLoading) return;
+    if (!isSuperAdmin) {
+      setAdmins([]);
+      setState({
+        loading: false,
+        saving: false,
+        deleting: '',
+        updating: '',
+        error: sessionError || 'Super administrator privileges are required.',
+      });
+      return;
+    }
     setState(current => ({ ...current, loading: true, error: '' }));
     try {
       const { data } = await axiosInstance.get('/admins');
-      setAdmins(data?.data?.admins || []);
-      setState({ loading: false, error: '', saving: false, deleting: '' });
+      const values = data?.data?.admins;
+      if (!Array.isArray(values)) {
+        throw new Error('Vybe returned an invalid administrator list.');
+      }
+      setAdmins(values);
+      setState({
+        loading: false,
+        error: '',
+        saving: false,
+        deleting: '',
+        updating: '',
+      });
     } catch (error) {
       setState({
         loading: false,
         saving: false,
         deleting: '',
+        updating: '',
         error: error?.response?.data?.message || error?.message || 'Could not load admins.',
       });
     }
-  }, []);
+  }, [isSuperAdmin, sessionError, sessionLoading]);
 
   useEffect(() => {
     loadAdmins();
@@ -52,7 +88,11 @@ export default function Admins() {
     setState(current => ({ ...current, saving: true, error: '' }));
     try {
       const { data } = await axiosInstance.post('/admins/add', form);
-      setAdmins(current => [data?.data?.admin, ...current].filter(Boolean));
+      const created = data?.data?.admin;
+      if (!created?._id || !['ADMIN', 'SUPER_ADMIN'].includes(created.role)) {
+        throw new Error('Vybe returned an invalid administrator record.');
+      }
+      setAdmins(current => [created, ...current]);
       setForm(EMPTY_FORM);
       setShowForm(false);
       setState(current => ({ ...current, saving: false }));
@@ -66,7 +106,7 @@ export default function Admins() {
   };
 
   const deleteAdmin = async (admin) => {
-    if (admin._id === currentAdmin._id) return;
+    if (!isSuperAdmin || admin._id === currentAdmin?._id) return;
     if (!window.confirm(`Permanently remove admin access for ${admin.fullName}?`)) return;
     setState(current => ({ ...current, deleting: admin._id, error: '' }));
     try {
@@ -82,10 +122,39 @@ export default function Admins() {
     }
   };
 
+  const updateRole = async (admin, role) => {
+    if (!isSuperAdmin || role === admin.role) return;
+    const verb = role === 'SUPER_ADMIN' ? 'grant' : 'remove';
+    if (!window.confirm(`${verb} super-admin access for ${admin.fullName}?`)) return;
+    setState(current => ({ ...current, updating: admin._id, error: '' }));
+    try {
+      const { data } = await axiosInstance.put(`/admins/${admin._id}`, { role });
+      const updated = data?.data?.admin;
+      if (
+        !updated?._id
+        || updated._id !== admin._id
+        || !['ADMIN', 'SUPER_ADMIN'].includes(updated.role)
+      ) {
+        throw new Error('Vybe returned an invalid administrator record.');
+      }
+      setAdmins(current => current.map(item => (
+        item._id === admin._id ? updated : item
+      )));
+      setState(current => ({ ...current, updating: '' }));
+      if (admin._id === currentAdmin?._id) await refreshSession();
+    } catch (error) {
+      setState(current => ({
+        ...current,
+        updating: '',
+        error: error?.response?.data?.message || error?.message || 'Could not change the admin role.',
+      }));
+    }
+  };
+
   return (
     <AdminLayout title="Admins" subTitle="Manage privileged Vybe console access">
       <div className="space-y-4">
-        <div className="flex justify-end">
+        {isSuperAdmin && <div className="flex justify-end">
           <button
             type="button"
             onClick={() => setShowForm(value => !value)}
@@ -94,8 +163,8 @@ export default function Admins() {
             {showForm ? <X size={18} /> : <Plus size={18} />}
             {showForm ? 'Cancel' : 'Add admin'}
           </button>
-        </div>
-        {showForm && (
+        </div>}
+        {isSuperAdmin && showForm && (
           <form onSubmit={createAdmin} className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm md:grid-cols-2">
             <label className="text-sm font-medium text-slate-700">
               Full name
@@ -166,13 +235,28 @@ export default function Admins() {
                       <p className="font-semibold text-slate-900">{admin.fullName}</p>
                       <p className="text-xs text-slate-500">{admin.email}</p>
                     </td>
-                    <td className="px-5 py-4 text-slate-600">{admin.role?.replace('_', ' ')}</td>
+                    <td className="px-5 py-4 text-slate-600">
+                      <label className="sr-only" htmlFor={`role-${admin._id}`}>
+                        Role for {admin.fullName}
+                      </label>
+                      <select
+                        id={`role-${admin._id}`}
+                        aria-label={`Role for ${admin.fullName}`}
+                        value={admin.role}
+                        disabled={state.updating === admin._id}
+                        onChange={event => updateRole(admin, event.target.value)}
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 disabled:opacity-50"
+                      >
+                        <option value="ADMIN">Admin</option>
+                        <option value="SUPER_ADMIN">Super admin</option>
+                      </select>
+                    </td>
                     <td className="px-5 py-4 text-slate-600">{admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : '—'}</td>
                     <td className="px-5 py-4 text-right">
                       <button
                         type="button"
-                        disabled={admin._id === currentAdmin._id || state.deleting === admin._id}
-                        title={admin._id === currentAdmin._id ? 'You cannot remove your own access' : 'Remove admin'}
+                        disabled={admin._id === currentAdmin?._id || state.deleting === admin._id}
+                        title={admin._id === currentAdmin?._id ? 'You cannot remove your own access' : 'Remove admin'}
                         onClick={() => deleteAdmin(admin)}
                         className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
                       >

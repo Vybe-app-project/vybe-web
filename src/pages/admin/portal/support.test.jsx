@@ -38,9 +38,9 @@ describe('admin support inbox', () => {
     );
 
     expect(await screen.findByText('Please delete my account.')).toBeInTheDocument();
-    expect(get).toHaveBeenCalledWith('/admin/support', {
-      params: { status: 'open', limit: 100 },
-    });
+    expect(get).toHaveBeenCalledWith('/admin/support', expect.objectContaining({
+      params: { status: 'open', page: 1, limit: 100 },
+    }));
     fireEvent.click(screen.getByRole('button', { name: 'Resolve' }));
 
     await waitFor(() => {
@@ -73,8 +73,46 @@ describe('admin support inbox', () => {
     expect(await screen.findByText('No open support requests')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'resolved' }));
     expect(await screen.findByText('This request is complete.')).toBeInTheDocument();
-    expect(get).toHaveBeenLastCalledWith('/admin/support', {
-      params: { status: 'resolved', limit: 100 },
-    });
+    expect(get).toHaveBeenLastCalledWith('/admin/support', expect.objectContaining({
+      params: { status: 'resolved', page: 1, limit: 100 },
+    }));
+  });
+
+  it('keeps older private requests reachable through server pagination', async () => {
+    get
+      .mockResolvedValueOnce({
+        data: {
+          messages: [{
+            _id: 'support-1',
+            fullName: 'Newest Visitor',
+            message: 'Newest support request.',
+            status: 'open',
+          }],
+          pagination: { page: 1, pages: 2, total: 101 },
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          messages: [{
+            _id: 'support-101',
+            fullName: 'Older Visitor',
+            message: 'Older support request.',
+            status: 'open',
+          }],
+          pagination: { page: 2, pages: 2, total: 101 },
+        },
+      });
+
+    render(
+      <AdminRouter>
+        <SupportInbox />
+      </AdminRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Next' }));
+    expect(await screen.findByText('Older support request.')).toBeInTheDocument();
+    expect(get).toHaveBeenLastCalledWith('/admin/support', expect.objectContaining({
+      params: { status: 'open', page: 2, limit: 100 },
+    }));
   });
 });

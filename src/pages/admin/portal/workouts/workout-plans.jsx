@@ -1,6 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { Search, Plus, ChevronDown, Eye, Calendar, Clock, Flame, Users, MoreVertical, Edit, Trash2, Star, Target } from 'lucide-react';
-import { useDisclosure } from '@chakra-ui/react';
+import { useEffect, useState } from 'react';
+import {
+  Calendar,
+  Clock,
+  Edit,
+  Eye,
+  Flame,
+  MoreVertical,
+  Plus,
+  Search,
+  Target,
+  Trash2,
+} from 'lucide-react';
 import axiosInstance from '../../../../config/axios';
 import AddWorkoutPlan from './add-workout-plan';
 

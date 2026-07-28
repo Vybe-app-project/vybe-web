@@ -1,6 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { Search, Plus, ChevronDown, Eye, Dumbbell, Clock, Flame, Users, MoreVertical, Edit, Trash2, Star } from 'lucide-react';
-import { useDisclosure } from '@chakra-ui/react';
+import { useEffect, useState } from 'react';
+import {
+  Clock,
+  Dumbbell,
+  Edit,
+  Eye,
+  Flame,
+  MoreVertical,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import AddWorkout from './addWorkout';
 import axiosInstance from '../../../../config/axios';
 
@@ -119,20 +128,6 @@ const LevelBadge = ({ level }) => {
   return (
     <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[level]}`}>
       {level}
-    </span>
-  );
-};
-
-// Status Badge Component
-const StatusBadge = ({ status }) => {
-  const colors = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-green-100 text-green-800',
-  };
-
-  return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status]}`}>
-      {status}
     </span>
   );
 };

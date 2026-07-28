@@ -2,10 +2,13 @@ import { useCallback, useEffect, useState } from 'react';
 import AdminLayout from '../../../components/shared/adminLayout';
 import { ErrorState, LoadingState } from '../../../components/shared/resource-state';
 import axiosInstance from '../../../config/axios';
+import { useAdminSession } from '../../../context/admin-session';
 import { useAdminRouter } from '../../../routing';
+import { clearAdminSession } from '../../../utils/adminAuthStorage';
 
 export default function Settings() {
   const { navigate } = useAdminRouter();
+  const { refresh: refreshSession } = useAdminSession();
   const [admin, setAdmin] = useState(null);
   const [form, setForm] = useState({ fullName: '', email: '' });
   const [state, setState] = useState({ loading: true, saving: false, error: '', success: '' });
@@ -35,7 +38,6 @@ export default function Settings() {
       const profile = data?.data?.admin;
       setAdmin(profile);
       setForm({ fullName: profile?.fullName || '', email: profile?.email || '' });
-      window.localStorage.setItem('admin_profile', JSON.stringify(profile || {}));
       setState({ loading: false, saving: false, error: '', success: '' });
     } catch (error) {
       setState({
@@ -58,7 +60,7 @@ export default function Settings() {
       const { data } = await axiosInstance.put(`/admins/${admin._id}`, form);
       const profile = data?.data?.admin || { ...admin, ...form };
       setAdmin(profile);
-      window.localStorage.setItem('admin_profile', JSON.stringify(profile));
+      await refreshSession();
       setState(current => ({ ...current, saving: false, success: 'Profile saved.' }));
     } catch (error) {
       setState(current => ({
@@ -93,8 +95,7 @@ export default function Settings() {
         currentPassword: passwords.currentPassword,
         newPassword: passwords.newPassword,
       });
-      window.localStorage.removeItem('access_token');
-      window.localStorage.removeItem('admin_profile');
+      clearAdminSession();
       navigate('/', { replace: true });
     } catch (error) {
       setPasswordState({
