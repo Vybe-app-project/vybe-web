@@ -105,10 +105,25 @@
     <script>
         (() => {
             const params = new URLSearchParams(window.location.search);
-            const allowedTypes = new Set(["post", "profile", "meal", "workout", "gym"]);
-            const type = allowedTypes.has(params.get("type")) ? params.get("type") : "";
-            const id = (params.get("id") || "").replace(/[^a-zA-Z0-9_-]/g, "");
-            const label = type ? `${type[0].toUpperCase()}${type.slice(1)}` : "content";
+            const allowedTypes = new Set([
+                "post",
+                "profile",
+                "meal",
+                "meal-template",
+                "meal-plan",
+                "workout",
+                "gym",
+            ]);
+            const requestedType = params.get("type") || "";
+            const requestedId = params.get("id") || "";
+            const type = allowedTypes.has(requestedType) ? requestedType : "";
+            const id = /^[a-zA-Z0-9_-]{1,128}$/.test(requestedId) ? requestedId : "";
+            const labels = {
+                "meal-template": "meal template",
+                "meal-plan": "weekly meal plan",
+            };
+            const label = labels[type]
+                || (type ? `${type[0].toUpperCase()}${type.slice(1)}` : "content");
             const destination = new URL("vybe://open");
 
             if (type && id) {
