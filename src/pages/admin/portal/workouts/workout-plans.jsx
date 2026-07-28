@@ -125,18 +125,20 @@ const WorkoutPlansTable = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [workoutPlans, setWorkoutPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [detailPlan, setDetailPlan] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   const getWorkoutPlans = async() => {
     try {
       setIsLoading(true);
       const res = await axiosInstance.get(`/workouts/commom/workouts/plan/all/premade/fetch`);
       setIsLoading(false);
-      console.log("workout plans:", res?.data);
       setWorkoutPlans(res?.data?.workouts || []);
     }
     catch(error) {
       setIsLoading(false);
-      console.error("Error fetching workout plans:", error);
+      setActionError(error?.response?.data?.message || error?.message || 'Could not load workout plans.');
     }
   }
 
@@ -147,23 +149,33 @@ const WorkoutPlansTable = () => {
   );
 
   const handleAddPlan = () => {
+    setSelectedPlan(null);
     setIsOpen(true);
   };
 
   const handleEdit = (id) => {
-    console.log('Edit workout plan:', id);
+    setSelectedPlan(workoutPlans.find(plan => plan._id === id) || null);
+    setIsOpen(true);
   };
 
-  const handleDelete = (id) => {
-    console.log('Delete workout plan:', id);
+  const handleDelete = async (id) => {
+    const plan = workoutPlans.find(item => item._id === id);
+    if (!window.confirm(`Permanently delete ${plan?.title || 'this workout plan'}?`)) return;
+    setActionError('');
+    try {
+      await axiosInstance.delete(`/workouts/plan/${id}`);
+      setWorkoutPlans(current => current.filter(item => item._id !== id));
+    } catch (error) {
+      setActionError(error?.response?.data?.message || error?.message || 'Could not delete the workout plan.');
+    }
   };
 
   const handleViewMore = (id) => {
-    console.log('View more details:', id);
+    setDetailPlan(workoutPlans.find(plan => plan._id === id) || null);
   };
 
   const handleViewWorkouts = (id) => {
-    console.log('View workouts in plan:', id);
+    setDetailPlan(workoutPlans.find(plan => plan._id === id) || null);
   };
 
   useEffect(() => {
@@ -176,6 +188,11 @@ const WorkoutPlansTable = () => {
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+      {actionError && (
+        <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {actionError}
+        </div>
+      )}
       {/* Search and Add Section */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative flex-1 max-w-md">
@@ -335,13 +352,42 @@ const WorkoutPlansTable = () => {
           <AddWorkoutPlan onDone={()=>{
             getWorkoutPlans();
             setIsOpen(false)
+            setSelectedPlan(null)
           }} isOpen={isOpen} onOpen={() => {
             setIsOpen(true)
           }} onClose={() => {
             setIsOpen(false)
-          }} />
+            setSelectedPlan(null)
+          }} workoutPlan={selectedPlan} />
         )
       }
+      {detailPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">{detailPlan.title}</h2>
+                <p className="mt-1 text-sm text-slate-600">{detailPlan.description || 'No description provided.'}</p>
+              </div>
+              <button type="button" onClick={() => setDetailPlan(null)} className="rounded-lg px-3 py-1 text-slate-500">Close</button>
+            </div>
+            <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+              <div><dt className="text-slate-500">Goal</dt><dd className="font-semibold">{detailPlan.goal || 'General fitness'}</dd></div>
+              <div><dt className="text-slate-500">Level</dt><dd className="font-semibold">{detailPlan.level}</dd></div>
+              <div><dt className="text-slate-500">Duration</dt><dd className="font-semibold">{detailPlan.durationWeeks || 0} weeks</dd></div>
+              <div><dt className="text-slate-500">Workouts</dt><dd className="font-semibold">{detailPlan.workouts?.length || 0}</dd></div>
+            </dl>
+            <h3 className="mt-6 font-bold text-slate-900">Included workouts</h3>
+            <div className="mt-2 space-y-2">
+              {detailPlan.workouts?.length ? detailPlan.workouts.map((workout, index) => (
+                <div key={workout?._id || `${workout?.title || 'workout'}-${index}`} className="rounded-lg bg-slate-50 p-3 text-sm font-semibold">
+                  {workout?.title || workout?.name || `Workout ${index + 1}`}
+                </div>
+              )) : <p className="text-sm text-slate-500">No workouts attached yet.</p>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

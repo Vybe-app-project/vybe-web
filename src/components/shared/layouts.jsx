@@ -1,16 +1,16 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useAdminRouter } from "../../routing";
 
 export default function AppLayout({children}){
 
-    const navigate = useNavigate()
+    const { navigate } = useAdminRouter()
 
       useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = window.localStorage.getItem("access_token");
     if (!token) {
-      navigate("/logout");
+      navigate("/", { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
     return (
         <>

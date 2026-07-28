@@ -1,7 +1,8 @@
-/* src/index.css */
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #00d4aa;
+}
 
 body {
   margin: 0;

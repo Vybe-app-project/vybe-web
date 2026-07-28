@@ -141,6 +141,9 @@ const WorkoutsTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false)
+  const [selectedWorkout, setSelectedWorkout] = useState(null);
+  const [detailWorkout, setDetailWorkout] = useState(null);
+  const [actionError, setActionError] = useState('');
 
   // Dummy data based on your schema
   const [workouts, setWorkouts] = useState([]);
@@ -150,36 +153,48 @@ const WorkoutsTable = () => {
         setIsLoading(true);
 const res = await axiosInstance.get(`/workouts/commom/workouts/all/premade/fetch`);
         setIsLoading(false);
-console.log("resssl", res?.data)
-setWorkouts(res?.data?.workouts)
+setWorkouts(res?.data?.workouts || [])
     }
-    catch(error){}
+    catch(error){
+      setIsLoading(false);
+      setActionError(error?.response?.data?.message || error?.message || 'Could not load workouts.');
+    }
   }
 
   const filteredWorkouts = workouts.filter(workout =>
-    workout.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    workout.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    workout.hashtags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+    workout.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    workout.category?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    workout.hashtags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleAddWorkout = () => {
-  setIsOpen(true)
+    setSelectedWorkout(null);
+    setIsOpen(true)
   };
 
   const handleEdit = (id) => {
-    console.log('Edit workout:', id);
+    setSelectedWorkout(workouts.find(workout => workout._id === id) || null);
+    setIsOpen(true);
   };
 
-  const handleDelete = (id) => {
-    console.log('Delete workout:', id);
+  const handleDelete = async (id) => {
+    const workout = workouts.find(item => item._id === id);
+    if (!window.confirm(`Permanently delete ${workout?.title || 'this workout'}?`)) return;
+    setActionError('');
+    try {
+      await axiosInstance.delete(`/workouts/${id}`);
+      setWorkouts(current => current.filter(item => item._id !== id));
+    } catch (error) {
+      setActionError(error?.response?.data?.message || error?.message || 'Could not delete the workout.');
+    }
   };
 
   const handleViewMore = (id) => {
-    console.log('View more details:', id);
+    setDetailWorkout(workouts.find(workout => workout._id === id) || null);
   };
 
   const handleViewExercises = (id) => {
-    console.log('View exercises:', id);
+    setDetailWorkout(workouts.find(workout => workout._id === id) || null);
   };
 
   useEffect(()=>{
@@ -192,6 +207,11 @@ getWorkouts()
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 bg-gray-50 min-h-screen">
+      {actionError && (
+        <div role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {actionError}
+        </div>
+      )}
 
       {/* Search and Add Section */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
@@ -258,7 +278,7 @@ getWorkouts()
                         </p> */}
                         <div className="flex items-center gap-3 mt-2">
                           <div className="flex flex-wrap gap-1">
-                            {workout.hashtags.slice(0, 2).map((tag, index) => (
+                            {workout.hashtags?.slice(0, 2).map((tag, index) => (
                               <span key={index} className="text-xs text-green-600 bg-blue-50 px-1 py-0.5 rounded">
                                 #{tag}
                               </span>
@@ -292,7 +312,7 @@ getWorkouts()
                       className="flex items-center gap-1 px-3 py-1 text-sm text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
                     >
                       <Dumbbell size={14} />
-                      {workout.exercises.length}
+                      {workout.exercises?.length || 0}
                     </button>
                   </td>
                   <td className="px-6 py-4">
@@ -343,13 +363,45 @@ getWorkouts()
             <AddWorkout onDone={()=>{
 getWorkouts();
                 setIsOpen(false)
+                setSelectedWorkout(null)
             }} isOpen={isOpen} onOpen={()=>{
                 setIsOpen(true)
             }} onClose={()=>{
                 setIsOpen(false)
-            }}  />
+                setSelectedWorkout(null)
+            }} workout={selectedWorkout} />
         )
       }
+      {detailWorkout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="max-h-[85vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">{detailWorkout.title}</h2>
+                <p className="mt-1 text-sm text-slate-600">{detailWorkout.description || 'No description provided.'}</p>
+              </div>
+              <button type="button" onClick={() => setDetailWorkout(null)} className="rounded-lg px-3 py-1 text-slate-500">Close</button>
+            </div>
+            <dl className="mt-5 grid grid-cols-2 gap-3 text-sm">
+              <div><dt className="text-slate-500">Category</dt><dd className="font-semibold">{detailWorkout.category}</dd></div>
+              <div><dt className="text-slate-500">Level</dt><dd className="font-semibold">{detailWorkout.level}</dd></div>
+              <div><dt className="text-slate-500">Duration</dt><dd className="font-semibold">{detailWorkout.duration || 0} min</dd></div>
+              <div><dt className="text-slate-500">Calories</dt><dd className="font-semibold">{detailWorkout.caloriesBurned || 0}</dd></div>
+            </dl>
+            <h3 className="mt-6 font-bold text-slate-900">Exercises</h3>
+            <div className="mt-2 space-y-2">
+              {detailWorkout.exercises?.length ? detailWorkout.exercises.map((exercise, index) => (
+                <div key={`${exercise.name}-${index}`} className="rounded-lg bg-slate-50 p-3 text-sm">
+                  <p className="font-semibold">{exercise.name}</p>
+                  <p className="text-slate-600">
+                    {[exercise.sets && `${exercise.sets} sets`, exercise.reps && `${exercise.reps} reps`, exercise.duration && `${exercise.duration}s`].filter(Boolean).join(' · ') || 'No rep details'}
+                  </p>
+                </div>
+              )) : <p className="text-sm text-slate-500">No exercises attached.</p>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

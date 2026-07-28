@@ -3,6 +3,7 @@ import { Eye, EyeOff } from "lucide-react";
 import axiosInstance from "../../../config/axios";
 import { Toaster, toaster } from "../../../components/ui/toaster"
 import { ClipLoader } from "react-spinners";
+import { useAdminRouter } from "../../../routing";
 
 const override = {
   display: "block",
@@ -11,11 +12,12 @@ const override = {
 };
 
 export default function LoginAdmin() {
-  const [email, setEmail] = useState(""); // Changed from null to empty string
-  const [password, setPassword] = useState(""); // Changed from null to empty string
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const { navigate } = useAdminRouter();
 
   const validateForm = () => {
     const newErrors = {};
@@ -41,7 +43,6 @@ export default function LoginAdmin() {
     
     try{
         if (validateForm()) {
-      console.log("Login attempt:", { email, password });
       if(email && password){
         setLoading(true)
         const res = await axiosInstance.post("/admins/login", {
@@ -50,7 +51,8 @@ export default function LoginAdmin() {
         setLoading(false)
 
         if(res?.data?.data?.token){
-            localStorage.setItem("access_token",res?.data?.data?.token)
+            window.localStorage.setItem("access_token",res?.data?.data?.token)
+            window.localStorage.setItem("admin_profile", JSON.stringify(res?.data?.data?.admin || {}))
         }
 
                 toaster.create({
@@ -59,12 +61,8 @@ export default function LoginAdmin() {
    closable: true,
        placement: "top-end",
 })
-      setTimeout(() => {
-        window.location.href=("/admin/home");
-      }, 500);
+      setTimeout(() => navigate("/home", { replace: true }), 500);
       }
-    } else {
-      console.log("Form validation failed");
     }
     }
     catch(error){
@@ -83,11 +81,11 @@ export default function LoginAdmin() {
   };
 
     useEffect(() => {
-    const token = localStorage.getItem("access_token");
+    const token = window.localStorage.getItem("access_token");
     if (token) {
-      window.location.href=("/admin/home");
+      navigate("/home", { replace: true });
     }
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -107,7 +105,7 @@ export default function LoginAdmin() {
           </p>
         </div>
         
-        <div className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -116,6 +114,8 @@ export default function LoginAdmin() {
               <input
                 id="email"
                 type="email"
+                required
+                autoComplete="email"
                 className={`appearance-none relative block w-full px-3 py-2 border ${
                   errors.email ? 'border-red-500' : 'border-gray-300'
                 } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm`}
@@ -141,6 +141,8 @@ export default function LoginAdmin() {
                 <input
                   type={showPassword ? "text" : "password"}
                   id="pass"
+                  required
+                  autoComplete="current-password"
                   className={`appearance-none relative block w-full px-3 py-2 pr-10 border ${
                     errors.password ? 'border-red-500' : 'border-gray-300'
                   } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm`}
@@ -153,7 +155,9 @@ export default function LoginAdmin() {
                     }
                   }}
                 />
-                <div
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer"
                   onClick={togglePasswordVisibility}
                 >
@@ -162,7 +166,7 @@ export default function LoginAdmin() {
                   ) : (
                     <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
                   )}
-                </div>
+                </button>
               </div>
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600">{errors.password}</p>
@@ -172,20 +176,20 @@ export default function LoginAdmin() {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <div
+              <button
+                type="button"
                 className="font-medium text-[#00D4AA] hover:text-teal-800 underline transition-colors duration-200 cursor-pointer"
-                onClick={() => console.log("Reset password clicked")}
+                onClick={() => navigate("/reset-password")}
               >
                 Reset Password
-              </div>
+              </button>
             </div>
           </div>
 
           <div>
             <button
-            disabled={loading}
-              type="button"
-              onClick={handleSubmit}
+              disabled={loading}
+              type="submit"
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#00D4AA] hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00D4AA] transition-colors duration-200 ${loading && 'opacity-[0.3]'}`}
             >
               {
@@ -200,7 +204,7 @@ export default function LoginAdmin() {
               }
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );
