@@ -5,7 +5,7 @@
   "description": "Redirects the retired GitHub Pages site to the live Vybe app.",
   "type": "module",
   "scripts": {
-    "build": "node scripts/build-redirect-site.mjs",
+    "build": "node api.js && node scripts/build-redirect-site.mjs",
     "lint": "for f in scripts/*.mjs; do node --check \"$f\" || exit 1; done",
     "test": "node --test",
     "pretest": "npm run scan",
