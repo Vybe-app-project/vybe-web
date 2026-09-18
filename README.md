@@ -17,7 +17,8 @@ hostname; it will become the product domain later).
 
 | Old Pages path | Now |
 | --- | --- |
-| `/`, `/open.html`, anything unknown (`404.html`) | `LIVE_ORIGIN/` |
+| `/`, anything unknown (`404.html`) | `LIVE_ORIGIN/` |
+| `/open.html?type=…&id=…` (mobile share links) | `LIVE_ORIGIN/open.html?type=…&id=…` (query forwarded by the page's one script) |
 | `/admin/` and `/admin/{home,admins,users,workouts,reports,support,settings,audit-log,reset-password}/` | `LIVE_ORIGIN/admin/login` |
 | `/forgot-password/` | `LIVE_ORIGIN/forgot-password` |
 | `/privacy-policy.html`, `/terms-and-conditions.html`, `/account-deletion.html` | same file name on `LIVE_ORIGIN` |

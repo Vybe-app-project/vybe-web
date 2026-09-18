@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -24,7 +25,7 @@ import {
 const EXPECTED = new Map([
   ['index.html', '/'],
   ['404.html', '/'],
-  ['open.html', '/'],
+  ['open.html', '/open.html'],
   ['admin/index.html', '/admin/login'],
   ...['home', 'admins', 'users', 'workouts', 'reports', 'support', 'settings', 'audit-log', 'reset-password']
     .map((route) => [`admin/${route}/index.html`, '/admin/login']),
@@ -156,7 +157,17 @@ describe('buildSite', () => {
         new RegExp(`<a class="button" href="${escapeRegExp(target)}">[^<]+</a>`),
         'visible fallback link',
       );
-      assert.doesNotMatch(html, /<script/i, 'no scripts');
+      if (file === 'open.html') {
+        // The one page that forwards its query string: a single hash-allowed script.
+        const script = html.match(/<script>([^<]+)<\/script>/);
+        assert.ok(script, 'open.html carries the forwarder');
+        assert.ok(script[1].includes(`${target}" + location.search`), 'forwarder keeps the query string');
+        const hash = createHash('sha256').update(script[1]).digest('base64');
+        assert.ok(html.includes(`script-src 'sha256-${hash}'`), 'CSP allows exactly that script');
+        assert.strictEqual((html.match(/<script/gi) ?? []).length, 1, 'exactly one script');
+      } else {
+        assert.doesNotMatch(html, /<script/i, 'no scripts');
+      }
 
       const absoluteUrls = html.match(/https?:\/\/[^\s"'<>]+/g) ?? [];
       assert.ok(absoluteUrls.length >= 3, 'refresh, canonical and link all carry the target');

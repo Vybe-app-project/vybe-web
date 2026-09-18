@@ -27,6 +27,8 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, parse, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createHash } from 'node:crypto';
+import { realpathSync } from 'node:fs';
 
 /** Where the product lives. Change ONLY this line when the domain moves. */
 export const LIVE_ORIGIN = 'https://vybe.149.56.18.195.sslip.io';
@@ -60,6 +62,7 @@ export const DESTINATIONS = {
   terms: { path: '/terms-and-conditions.html', heading: 'The terms have moved', cta: 'Continue to the terms and conditions' },
   deletion: { path: '/account-deletion.html', heading: 'Account deletion has moved', cta: 'Continue to account deletion' },
   support: { path: '/support', heading: 'Support has moved', cta: 'Continue to support' },
+  share: { path: '/open.html', heading: 'This shared link has moved', cta: 'Continue to what was shared' },
 };
 
 /**
@@ -71,9 +74,10 @@ export const PAGES = [
   ['index.html', 'app'],
   // GitHub Pages serves this body (with a 404 status) for any path not listed here.
   ['404.html', 'app'],
-  // The mobile app's share links point at open.html?type=...&id=... . A static
-  // page cannot forward the query string, so those land on the app itself.
-  ['open.html', 'app'],
+  // The mobile app's share links point at open.html?type=...&id=... . The live
+  // app answers the same path, so this one page forwards its query string with
+  // a hash-allowed one-line script (see renderPage); meta refresh cannot.
+  ['open.html', 'share'],
   ['admin/index.html', 'admin'],
   ...LEGACY_ADMIN_ROUTES.map((route) => [`admin/${route}/index.html`, 'admin']),
   // The mobile app builds its "forgot password" link on the old web origin.
@@ -272,6 +276,15 @@ export function renderPage(file, key, origin = LIVE_ORIGIN) {
   }
   assertLiveOrigin(origin);
   const target = escapeHtml(`${origin}${destination.path}`);
+  // open.html is the only page whose query string matters (type + id of the
+  // shared content). A meta refresh drops it, so that page alone carries a
+  // one-line forwarder, allowed by CSP hash rather than 'unsafe-inline'.
+  const forwarder = file === 'open.html'
+    ? `location.replace(${JSON.stringify(`${origin}${destination.path}`)} + location.search + location.hash);`
+    : null;
+  const scriptPolicy = forwarder
+    ? ` script-src 'sha256-${createHash('sha256').update(forwarder).digest('base64')}';`
+    : '';
   // Nested pages reach the shared favicon relatively, so the site works under
   // any Pages project path (/vybe-web/ today) or a root custom domain later.
   const depth = file.split('/').length - 1;
@@ -285,11 +298,12 @@ export function renderPage(file, key, origin = LIVE_ORIGIN) {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="refresh" content="0; url=${target}">
+    <meta http-equiv="refresh" content="0; url=${target}">${forwarder ? `
+    <script>${forwarder}</script>` : ''}
     <link rel="canonical" href="${target}">
     <meta name="robots" content="noindex">
     <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none';${scriptPolicy} style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f9f8">
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#04101b">
     <link rel="icon" type="image/svg+xml" href="${assetPrefix}favicon.svg">
@@ -335,8 +349,17 @@ export async function buildSite(outputDir = DEFAULT_OUTPUT_DIR, origin = LIVE_OR
   return written;
 }
 
-const invokedDirectly = process.argv[1]
-  && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
+// Compare real paths: npm and some shells hand over a relative or symlinked
+// argv[1], and a plain string comparison would silently skip the build.
+const realPath = (p) => {
+  try {
+    return realpathSync(p);
+  } catch {
+    return resolve(p);
+  }
+};
+const invokedDirectly = Boolean(process.argv[1])
+  && realPath(new URL(import.meta.url).pathname) === realPath(process.argv[1]);
 
 if (invokedDirectly) {
   const outputDir = process.argv[2] ?? DEFAULT_OUTPUT_DIR;
