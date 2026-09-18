@@ -24,10 +24,10 @@ hostname; it will become the product domain later).
 | `/privacy-policy.html`, `/terms-and-conditions.html`, `/account-deletion.html` | same file name on `LIVE_ORIGIN` |
 | `/support.html`, `/support/` | `LIVE_ORIGIN/support` |
 
-The mobile app still builds its share links as `…/open.html?type=…&id=…` on
-this origin. A static page cannot forward a query string, so those links land
-on the app's front page until the mobile `WEB_BASE_URL` is repointed at the
-live site and that site learns to handle them.
+The mobile app builds its share links as `…/open.html?type=…&id=…`. That is
+the one page here that carries a script: a single hash-allowed line that
+forwards the query string to the live app's own `/open.html`, which resolves
+the shared post, profile, meal, template, plan, workout or gym.
 
 ## Changing the live origin
 
