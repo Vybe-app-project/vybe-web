@@ -31,7 +31,7 @@ import { createHash } from 'node:crypto';
 import { realpathSync } from 'node:fs';
 
 /** Where the product lives. Change ONLY this line when the domain moves. */
-export const LIVE_ORIGIN = 'https://vybe.149.56.18.195.sslip.io';
+export const LIVE_ORIGIN = 'https://vybeapp.fit';
 
 /** Output directory when none is given on the command line. */
 export const DEFAULT_OUTPUT_DIR = 'site';
