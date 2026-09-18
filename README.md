@@ -12,8 +12,8 @@ old code remains in git history before that date.
 
 ## Where things moved
 
-`LIVE_ORIGIN` is currently `https://vybe.149.56.18.195.sslip.io` (an interim
-hostname; it will become the product domain later).
+`LIVE_ORIGIN` is `https://vybeapp.fit`, the product domain (until 2026-09-18 it
+was the interim `vybe.149.56.18.195.sslip.io` host).
 
 | Old Pages path | Now |
 | --- | --- |
