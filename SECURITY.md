@@ -62,6 +62,12 @@ was enough to run it.
 4. **`npm run scan`** is wired into `pretest`, so the scan runs on the exact
    code path that previously detonated the loader.
 
+5. **No build configuration and no dependencies.** Since the Pages site was
+   reduced to redirect pages (also 2026-09-17), the repository contains one
+   dependency-free generator script and its tests. There is no vite, babel or
+   tailwind config for a payload to be appended to, `npm ci` installs nothing,
+   and the published pages carry no scripts at all.
+
 ### Running the check manually
 
 ```sh

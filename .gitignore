@@ -8,9 +8,8 @@
 # testing
 /coverage
 
-# production
-/build
-/public-build
+# generated redirect site (rebuilt by npm run build and by the Pages workflow)
+/site
 
 # misc
 .DS_Store
